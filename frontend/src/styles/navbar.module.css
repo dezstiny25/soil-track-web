@@ -1,0 +1,32 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap");
+
+#root {
+    font-family: "DM Sans", system-ui, sans-serif;
+}
+
+.navbar {
+    background-color: #F6F8FA; /* Light background color */
+}
+
+.profileButton {
+    border-radius: 50px; /* Make it fully rounded */
+    border: 1px solid transparent;
+    font-size: 1em;
+    background-color: #EDF1F4;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    transition: border-color 0.25s;
+}
+  
+.profileButton:hover {
+    fill: #d1d1d1;
+}
+.profileButton:focus,
+.profileButton:focus-visible {
+    fill: 4px auto -webkit-focus-ring-color;
+}
+
+.defaultProfileIcon {
+    background-color: #D9D9D9; /* Default color for the profile icon */
+}

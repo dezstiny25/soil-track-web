@@ -1,0 +1,32 @@
+# Node modules
+node_modules/
+
+# TypeScript output (compiled files)
+dist/
+build/
+
+# TypeScript specific files
+*.tsbuildinfo
+
+# Environment variables
+.env
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# VSCode settings
+.vscode/
+
+# Mac OS specific files
+.DS_Store
+
+# Windows specific files
+Thumbs.db
+
+# IDE-specific files
+.idea/
+
+# Other unwanted files
+*.swp
