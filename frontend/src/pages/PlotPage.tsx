@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { usePlotStore } from '../store/usePlotStore';
 import WebSoilChart from '../components/charts/WebSoilChart';
 import WebSmallChart from '../components/charts/WebSmallChart';
+import AISummaryCard from '../components/AISummaryCard';
 
 export default function PlotsPage() {
   const { plotId } = useParams();
@@ -35,62 +36,57 @@ export default function PlotsPage() {
   return (
     <div className="min-h-screen min-w-screen">
       <main className="container py-8 space-y-8">
-        <div className="text-left px-6 md:px-0">
-          <h1 className="text-2xl font-bold text-green-800">
-            {plot_deets?.plot_name || "Unnamed Plot"}
-          </h1>
-         
-        </div>
+        <AISummaryCard />
+<div className="grid grid-cols-6 gap-4">
+  {/* MOISTURE 1ST COLUMN – spans 3 columns */}
+  <div className="col-span-4 border p-4 rounded">
+    <h2 className="text-lg font-semibold mb-2">Latest Moisture Reading</h2>
+    <p>
+      {latestMoisture
+        ? `${latestMoisture.soil_moisture}% on ${new Date(latestMoisture.read_time).toLocaleString()}`
+        : 'No moisture data'}
+    </p>
+    <WebSoilChart
+      moistureData={moisture_readings.slice(-4)}
+      nutrientData={nutrient_readings.slice(-4)}
+    />
+  </div>
 
-        <div className="text-lg font-semibold text-[#134F14]">
-          Crop: {plot_deets.user_crops?.crop_name ?? 'No crop'}
-        </div>
+  {/* NUTRIENTS 2ND COLUMN – spans 2 columns */}
+  <div className="col-span-2 space-y-4">
+    <div className="border p-4 rounded">
+      <h2 className="text-sm text-gray-500">Nitrogen</h2>
+      <p className="text-xl font-bold text-black">
+        {latestNutrients?.readed_nitrogen ?? 'N/A'} mg/l
+      </p>
+      <WebSmallChart
+        label="Nitrogen"
+        data={nutrient_readings.slice(-4).map((n) => n.readed_nitrogen)}
+      />
+    </div>
+    <div className="border p-4 rounded">
+      <h2 className="text-sm text-gray-500">Phosphorus</h2>
+      <p className="text-xl font-bold text-black">
+        {latestNutrients?.readed_phosphorus ?? 'N/A'} mg/l
+      </p>
+      <WebSmallChart
+        label="Phosphorus"
+        data={nutrient_readings.slice(-4).map((n) => n.readed_phosphorus)}
+      />
+    </div>
+    <div className="border p-4 rounded">
+      <h2 className="text-sm text-gray-500">Potassium</h2>
+      <p className="text-xl font-bold text-black">
+        {latestNutrients?.readed_potassium ?? 'N/A'} mg/l
+      </p>
+      <WebSmallChart
+        label="Potassium"
+        data={nutrient_readings.slice(-4).map((n) => n.readed_potassium)}
+      />
+    </div>
+  </div>
+</div>
 
-        <div className="grid grid-cols-3 gap-4">
-          <div className="border p-4 rounded">
-            <h2 className="text-sm text-gray-500">Nitrogen</h2>
-            <p className="text-xl font-bold text-black">
-              {latestNutrients?.readed_nitrogen ?? 'N/A'} mg/l
-            </p>
-            <WebSmallChart
-              label="Nitrogen"
-              data={nutrient_readings.map((n) => n.readed_nitrogen)}
-            />
-          </div>
-          <div className="border p-4 rounded">
-            <h2 className="text-sm text-gray-500">Phosphorus</h2>
-            <p className="text-xl font-bold text-black">
-              {latestNutrients?.readed_phosphorus ?? 'N/A'} mg/l
-            </p>
-            <WebSmallChart
-              label="Phosphorus"
-              data={nutrient_readings.map((n) => n.readed_phosphorus)}
-            />
-          </div>
-          <div className="border p-4 rounded">
-            <h2 className="text-sm text-gray-500">Potassium</h2>
-            <p className="text-xl font-bold text-black">
-              {latestNutrients?.readed_potassium ?? 'N/A'} mg/l
-            </p>
-            <WebSmallChart
-              label="Potassium"
-              data={nutrient_readings.map((n) => n.readed_potassium)}
-            />
-          </div>
-        </div>
-
-        <div className="mt-6">
-          <h2 className="text-lg font-semibold mb-2">Latest Moisture Reading</h2>
-          <p>
-            {latestMoisture
-              ? `${latestMoisture.soil_moisture}% on ${new Date(latestMoisture.read_time).toLocaleString()}`
-              : 'No moisture data'}
-          </p>
-          <WebSoilChart
-            moistureData={moisture_readings}
-            nutrientData={nutrient_readings}
-          />
-        </div>
 
         <div className="mt-6">
           <h2 className="text-lg font-semibold mb-2">Irrigation Log</h2>

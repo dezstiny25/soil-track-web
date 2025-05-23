@@ -52,14 +52,25 @@ export interface PlotDetails {
   irrigation_logs: IrrigationLog[];
 }
 
+export interface AiSummary {
+  summary_analysis: string;
+  analysis_date: string;
+}
+
+
 interface PlotState {
   plots: Plot[] | null;
   selectedPlotId: string | null;
   selectedPlotDetails: PlotDetails | null;
 
+  aiSummary: AiSummary | null;
+  getAiSummary: (plotId: string) => Promise<void>;
+
   getUserPlot: (userId: string) => Promise<void>;
   getFullPlotDetails: (plotId: string) => Promise<void>;
   setSelectedPlotId: (plotId: string) => void;
+
+ 
 }
 
 // Utility: fallback-safe promise handler
@@ -128,4 +139,19 @@ export const usePlotStore = create<PlotState>((set) => ({
   setSelectedPlotId: (plotId: string) => {
     set({ selectedPlotId: plotId });
   },
+
+  aiSummary: null,
+
+  getAiSummary: async (plotId: string) => {
+    try {
+      const res = await axiosInstance.get("/plots/ai-summary", {
+        params: { plot_id: plotId },
+      });
+      set({ aiSummary: res.data });
+    } catch (error) {
+      console.error("Failed to fetch AI summary:", error);
+    }
+  },
+
+
 }));

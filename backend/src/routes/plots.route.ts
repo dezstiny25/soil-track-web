@@ -123,7 +123,7 @@ router.get("/analytics", async (req, res) => {
 
     if (irrigationError) throw irrigationError;
 
-    res.json({
+      res.json({
       plot,
       moisture_readings,
       nutrient_readings,
@@ -134,6 +134,42 @@ router.get("/analytics", async (req, res) => {
     res.status(500).json({ message: "Failed to fetch plot analytics", error });
   }
 });
+router.get("/ai-summary", async (req, res) => {
+  const plot_id = req.query.plot_id as string;
+
+  if (!plot_id) {
+    res.status(400).json({ error: "Missing plot_id" });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("ai_analysis")
+      .select("analysis")
+      .eq("plot_id", plot_id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (error || !data) throw error;
+
+    const analysis = data.analysis;
+    // Check if it's a string, parse if needed
+    const parsed =
+      typeof analysis === "string" ? JSON.parse(analysis) : analysis;
+
+    const summary = parsed.AI_Analysis;
+
+    res.json({
+      headline: summary.headline,
+      short_summary: summary.short_summary,
+    });
+  } catch (error) {
+    console.error("Failed to fetch or parse AI analysis:", error);
+    res.status(500).json({ error: "Failed to fetch AI summary" });
+  }
+});
+
+
 
 
 export default router;
