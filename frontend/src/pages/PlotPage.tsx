@@ -40,7 +40,7 @@ export default function PlotsPage() {
 <div className="grid grid-cols-6 gap-4">
   {/* MOISTURE 1ST COLUMN – spans 3 columns */}
   <div className="col-span-4 border p-4 rounded">
-    <h2 className="text-lg font-semibold mb-2">Latest Moisture Reading</h2>
+    <h2 className="text-lg font-semibold mb-2">Latest Moisture Readings</h2>
     <p>
       {latestMoisture
         ? `${latestMoisture.soil_moisture}% on ${new Date(latestMoisture.read_time).toLocaleString()}`

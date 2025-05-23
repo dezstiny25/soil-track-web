@@ -171,5 +171,4 @@ router.get("/ai-summary", async (req, res) => {
 
 
 
-
 export default router;
