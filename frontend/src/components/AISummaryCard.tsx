@@ -17,12 +17,12 @@ const AISummaryCard: React.FC = () => {
   }, [plotId]);
 
   return (
-    <div className="rounded-xl shadow-md bg-white p-4 border border-gray-200 w-full max-w-md mx-auto my-4">
+    <div className="rounded-xl shadow-md bg-white p-9 border border-gray-200 w-full mx-auto my-4 h-69">
       <span className={dashboardStyles.subHeading}>Hey, <span className="font-bold">{authUser?.userFname || 'Guest Account'}! 👋</span></span>
-      <h2 className="text-xl font-bold text-green-700 mb-2">
+      <h2 className="text-[42px] font-bold text-green-900 mb-2">
         {aiSummary?.headline || "AI Summary Unavailable"}
       </h2>
-      <p className="text-gray-800">
+      <p className="text-gray-800 w-3/4 text-lg">
         {aiSummary?.short_summary || "No summary data found for this plot."}
       </p>
     </div>

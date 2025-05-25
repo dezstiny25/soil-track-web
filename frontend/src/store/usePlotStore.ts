@@ -57,6 +57,20 @@ export interface AiSummary {
   analysis_date: string;
 }
 
+export interface PlotDetailsCardProps {
+  cropName: string;
+  soilType: string;
+  moistureSensorCount: number;
+  npkSensorCount: number;
+  onEditCrop?: () => void;
+  onEditSoil?: () => void;
+}
+
+export interface AIHistoryEntry {
+  analysis_date: string;
+  analysis_type: string;
+  findings: string;
+}
 
 interface PlotState {
   plots: Plot[] | null;
@@ -66,11 +80,18 @@ interface PlotState {
   aiSummary: AiSummary | null;
   getAiSummary: (plotId: string) => Promise<void>;
 
+  sensorCountByCategory: Record<string, number> | null;
+  getSensorCount: (plotId: string) => Promise<void>;
+
+  aiHistory: AIHistoryEntry[] | null;
+  getAiHistory: (plotId: string) => Promise<void>;
+
+  getGroupedIrrigationLogs: () => { date: string; count: number }[];
+
   getUserPlot: (userId: string) => Promise<void>;
   getFullPlotDetails: (plotId: string) => Promise<void>;
   setSelectedPlotId: (plotId: string) => void;
-
- 
+  
 }
 
 // Utility: fallback-safe promise handler
@@ -122,6 +143,8 @@ export const usePlotStore = create<PlotState>((set) => ({
   plots: null,
   selectedPlotId: null,
   selectedPlotDetails: null,
+  sensorCountByCategory: null,
+  aiHistory: null,
 
   getUserPlot: async (userId: string) => {
     const data = await getPlotList(userId);
@@ -153,5 +176,47 @@ export const usePlotStore = create<PlotState>((set) => ({
     }
   },
 
+  getSensorCount: async (plotId: string) => {
+    try {
+      const res = await axiosInstance.get("/plots/sensor-count", {
+        params: { plot_id: plotId },
+      });
+      set({ sensorCountByCategory: res.data.sensorCounts });
+    } catch (error) {
+      console.error("Failed to fetch sensor count", error);
+      set({ sensorCountByCategory: null });
+    }
+  },
+
+  getAiHistory: async (plotId: string) => {
+      try {
+        const res = await axiosInstance.get("/plots/ai-history", {
+          params: { plot_id: plotId },
+        });
+        set({ aiHistory: res.data.history });
+      } catch (error) {
+        console.error("Failed to fetch AI history", error);
+        set({ aiHistory: null });
+      }
+    },
+
+    getGroupedIrrigationLogs: () => {
+      const logs = usePlotStore.getState().selectedPlotDetails?.irrigation_logs || [];
+
+      const grouped: Record<string, number> = {};
+
+      logs.forEach((log) => {
+        const date = new Date(log.time_started).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+
+        grouped[date] = (grouped[date] || 0) + 1;
+      });
+
+      return Object.entries(grouped).map(([date, count]) => ({ date, count }));
+    },
 
 }));
+

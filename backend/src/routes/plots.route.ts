@@ -153,7 +153,6 @@ router.get("/ai-summary", async (req, res) => {
     if (error || !data) throw error;
 
     const analysis = data.analysis;
-    // Check if it's a string, parse if needed
     const parsed =
       typeof analysis === "string" ? JSON.parse(analysis) : analysis;
 
@@ -169,6 +168,72 @@ router.get("/ai-summary", async (req, res) => {
   }
 });
 
+router.get("/ai-history", async (req, res) => {
+  const plot_id = req.query.plot_id as string;
+
+  if (!plot_id) {
+    res.status(400).json({ error: "Missing plot_id" });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("ai_analysis")
+      .select("analysis_date, analysis, analysis_type")
+      .eq("plot_id", plot_id)
+      .order("analysis_date", { ascending: false });
+
+    if (error) throw error;
+
+    const parsedHistory = data.map((entry) => {
+    const parsed =
+      typeof entry.analysis === "string"
+        ? JSON.parse(entry.analysis)
+        : entry.analysis;
+
+    return {
+      analysis_date: entry.analysis_date,
+      analysis_type: entry.analysis_type,
+      findings: parsed?.AI_Analysis?.summary?.findings || "No findings",
+    };
+  });
+
+
+    res.json({ history: parsedHistory });
+  } catch (error) {
+    console.error("Failed to fetch AI history", error);
+    res.status(500).json({ error: "Failed to fetch AI history" });
+  }
+});
+
+router.get("/sensor-count", async (req, res) => {
+  const plot_id = req.query.plot_id as string;
+  if (!plot_id) {
+    res.status(400).json({ error: "Missing plot_id" });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("user_plot_sensors")
+      .select(`
+        sensor_id,
+        soil_sensors (sensor_category)
+      `)
+      .eq("plot_id", plot_id);
+
+    if (error) throw error;
+
+    const sensorCounts = data.reduce((acc: Record<string, number>, item: any) => {
+      const category = item.soil_sensors?.sensor_category ?? "Unknown";
+      acc[category] = (acc[category] || 0) + 1;
+      return acc;
+    }, {});
+
+    res.json({ sensorCounts });
+  } catch (err) {
+    console.error("Failed to get sensor count", err);
+    res.status(500).json({ error: "Failed to fetch sensor count" });
+  }
+});
 
 
 export default router;
