@@ -42,12 +42,12 @@ export default function PlotsPage() {
   return (
     
     <div className="min-h-screen min-w-screen">
-      <main className="container py-8 space-y-8">
-        <div className="grid grid-cols-7 gap-4">
-            <div className="col-span-5">
+      <main className="container py-8 space-y-8 mx-auto">
+        <div className="grid grid-cols-7 gap-4 ">
+            <div className="col-span-5 h-[400px] relative overflow-hidden bg-white rounded-lg border shadow-sm">
               <AISummaryCard />
             </div>
-            <div className="col-span-2 h-full relative overflow-hidden bg-white rounded-lg">
+            <div className="col-span-2 h-[400px] relative overflow-hidden bg-white rounded-lg">
               <img
                 src={dailyAnalysis}
                 alt="Daily Analysis Background"
@@ -55,17 +55,20 @@ export default function PlotsPage() {
               />
                 <div className="absolute inset-0 flex flex-col justify-end items-center pb-6 space-y-4">
                   <span className={`${plotStyles.analysisText} text-white text-center mb-1`}>
-                    Your Daily Analysis is Ready
+                    Your Daily Analysis <br></br>is Ready
                   </span>
-                  <button onClick={() => navigate('/plots/analysis')} className="px-4 py-2 bg-white text-[#134F14] rounded-full text-sm m-0">
-                      Go to daily analysis
+                 <button
+                    onClick={() => navigate(`/plots/${plotId}/analysis`)}
+                    className="px-4 py-2 bg-white text-[#134F14] w-3/4 rounded-full text-sm m-0"
+                  >
+                    Go to daily analysis
                   </button>
                 </div>
             </div>
           </div>
-        <div className="grid grid-cols-6 gap-4">
+        <div className="grid grid-cols-6 gap-4 bg-white p-4 rounded-lg shadow-sm">
           {/* MOISTURE 1ST COLUMN – spans 3 columns */}
-          <div className="col-span-4 border p-4 rounded bg-white">
+          <div className="col-span-4 p-4 rounded bg-white">
             <h2 className="text-lg font-semibold mb-2">Latest Moisture Readings</h2>
             <p>
               {latestMoisture
@@ -118,9 +121,9 @@ export default function PlotsPage() {
             {/* Top Row: MapView and PlotDetailsCard side by side */}
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-white rounded-lg p-2">
-                <MapView />
+                <MapView polygons={plot_deets.polygons}/>
               </div>
-              <div className="bg-white rounded-lg p-2">
+              <div className="bg-white rounded-lg h-full w-full p-2">
                 <PlotDetailsCard />
               </div>
             </div>

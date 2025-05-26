@@ -1,6 +1,7 @@
 // store/usePlotStore.ts
 import { create } from "zustand";
 import { axiosInstance } from "../lib/axios";
+import { calculateAreaInSqMeters } from "../utils/calculateArea";
 
 // Interfaces
 export interface UserCrop {
@@ -72,6 +73,18 @@ export interface AIHistoryEntry {
   findings: string;
 }
 
+interface SensorCountByCategory {
+  [category: string]: number;
+}
+
+interface GlobalIrrigationLog {
+  plot_id: string;
+  plot_name: string;
+  time_started: string;
+  time_stopped: string;
+  mac_address: string;
+}
+
 interface PlotState {
   plots: Plot[] | null;
   selectedPlotId: string | null;
@@ -80,17 +93,27 @@ interface PlotState {
   aiSummary: AiSummary | null;
   getAiSummary: (plotId: string) => Promise<void>;
 
-  sensorCountByCategory: Record<string, number> | null;
+  // Store sensor counts for each plot by plot_id
+  sensorCountsByPlot: Record<string, SensorCountByCategory>;
   getSensorCount: (plotId: string) => Promise<void>;
+  sensorCountByCategory: () => SensorCountByCategory;
 
   aiHistory: AIHistoryEntry[] | null;
   getAiHistory: (plotId: string) => Promise<void>;
 
   getGroupedIrrigationLogs: () => { date: string; count: number }[];
 
+  areaInSqMeters: number | null;
+  setAreaInSqMeters: (area: number) => void;
+
+  globalIrrigationLogs: GlobalIrrigationLog[];
+  getGlobalIrrigationLogs: (userId: string) => Promise<void>;
+
+
   getUserPlot: (userId: string) => Promise<void>;
   getFullPlotDetails: (plotId: string) => Promise<void>;
   setSelectedPlotId: (plotId: string) => void;
+
   
 }
 
@@ -139,12 +162,15 @@ export const getPlotDetails = async (plotId: string): Promise<PlotDetails | null
 };
 
 // ✅ Zustand store
-export const usePlotStore = create<PlotState>((set) => ({
+export const usePlotStore = create<PlotState>((set, get) => ({
   plots: null,
   selectedPlotId: null,
   selectedPlotDetails: null,
-  sensorCountByCategory: null,
+  sensorCountsByPlot: {}, // store counts by plot id
   aiHistory: null,
+
+  areaInSqMeters: null,
+  setAreaInSqMeters: (area) => set({ areaInSqMeters: area }),
 
   getUserPlot: async (userId: string) => {
     const data = await getPlotList(userId);
@@ -156,6 +182,23 @@ export const usePlotStore = create<PlotState>((set) => ({
     const plotDetails = await getPlotDetails(plotId);
     if (plotDetails) {
       set({ selectedPlotDetails: plotDetails });
+
+      try {
+        const rawPolygons = plotDetails.plot_deets.polygons;
+        // polygons might be a JSON string; parse if needed
+        const polygons = typeof rawPolygons === "string" ? JSON.parse(rawPolygons) : rawPolygons;
+
+        // Check if polygons is an array of LatLngExpression
+        if (Array.isArray(polygons) && polygons.length > 0) {
+          const area = calculateAreaInSqMeters(polygons);
+          set({ areaInSqMeters: area });
+        } else {
+          set({ areaInSqMeters: null });
+        }
+      } catch (err) {
+        console.error("Failed to calculate area:", err);
+        set({ areaInSqMeters: null });
+      }
     }
   },
 
@@ -181,42 +224,75 @@ export const usePlotStore = create<PlotState>((set) => ({
       const res = await axiosInstance.get("/plots/sensor-count", {
         params: { plot_id: plotId },
       });
-      set({ sensorCountByCategory: res.data.sensorCounts });
+      const counts: SensorCountByCategory = res.data.sensorCounts || {};
+      set((state) => ({
+        sensorCountsByPlot: {
+          ...state.sensorCountsByPlot,
+          [plotId]: counts,
+        },
+      }));
     } catch (error) {
       console.error("Failed to fetch sensor count", error);
-      set({ sensorCountByCategory: null });
+      set((state) => ({
+        sensorCountsByPlot: {
+          ...state.sensorCountsByPlot,
+          [plotId]: {},
+        },
+      }));
     }
   },
 
+    sensorCountByCategory: () => {
+    const plotId = get().selectedPlotId;
+    if (!plotId) return {};
+    return get().sensorCountsByPlot[plotId] || {};
+  },
+
+
   getAiHistory: async (plotId: string) => {
-      try {
-        const res = await axiosInstance.get("/plots/ai-history", {
-          params: { plot_id: plotId },
-        });
-        set({ aiHistory: res.data.history });
-      } catch (error) {
-        console.error("Failed to fetch AI history", error);
-        set({ aiHistory: null });
-      }
-    },
+    try {
+      const res = await axiosInstance.get("/plots/ai-history", {
+        params: { plot_id: plotId },
+      });
+      set({ aiHistory: res.data.history });
+    } catch (error) {
+      console.error("Failed to fetch AI history", error);
+      set({ aiHistory: null });
+    }
+  },
 
-    getGroupedIrrigationLogs: () => {
-      const logs = usePlotStore.getState().selectedPlotDetails?.irrigation_logs || [];
+  getGroupedIrrigationLogs: () => {
+    const logs = get().selectedPlotDetails?.irrigation_logs || [];
 
-      const grouped: Record<string, number> = {};
+    const grouped: Record<string, number> = {};
 
-      logs.forEach((log) => {
-        const date = new Date(log.time_started).toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        });
-
-        grouped[date] = (grouped[date] || 0) + 1;
+    logs.forEach((log) => {
+      const date = new Date(log.time_started).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
       });
 
-      return Object.entries(grouped).map(([date, count]) => ({ date, count }));
-    },
+      grouped[date] = (grouped[date] || 0) + 1;
+    });
+
+    return Object.entries(grouped).map(([date, count]) => ({ date, count }));
+  },
+
+  globalIrrigationLogs: [] as GlobalIrrigationLog[],
+  getGlobalIrrigationLogs: async (userId: string) => {
+    try {
+      const res = await axiosInstance.get("/plots/irrigation-history", {
+        params: { user_id: userId },
+      });
+      set({ globalIrrigationLogs: res.data.logs });
+    } catch (err) {
+      console.error("Failed to fetch global irrigation logs", err);
+      set({ globalIrrigationLogs: [] });
+    }
+  },
+
+
+
 
 }));
-

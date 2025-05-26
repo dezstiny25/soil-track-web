@@ -235,5 +235,44 @@ router.get("/sensor-count", async (req, res) => {
   }
 });
 
+// ✅ New Route to fetch irrigation history across all plots for a user
+router.get("/irrigation-history", async (req, res) => {
+  const user_id = req.query.user_id as string;
+  if (!user_id) res.status(400).json({ error: "Missing user_id" });
+
+  try {
+    const { data, error } = await supabase
+      .from("irrigation_log")
+      .select(`
+        time_started,
+        time_stopped,
+        mac_address,
+        plot_id,
+        user_plots (
+          plot_name
+        )
+      `)
+      .order("time_started", { ascending: false });
+
+    if (error) throw error;
+
+    const filtered = data.filter((entry: any) => entry.user_plots); // Ensure plot joined
+
+    const formatted = filtered.map((entry: any) => ({
+      plot_id: entry.plot_id,
+      plot_name: entry.user_plots.plot_name,
+      time_started: entry.time_started,
+      time_stopped: entry.time_stopped,
+      mac_address: entry.mac_address,
+    }));
+
+    res.json({ logs: formatted });
+  } catch (err) {
+    console.error("Failed to fetch irrigation history", err);
+    res.status(500).json({ error: "Failed to fetch irrigation history" });
+  }
+});
+
+
 
 export default router;

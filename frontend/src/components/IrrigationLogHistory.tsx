@@ -22,15 +22,15 @@ const IrrigationLogHistory: React.FC = () => {
   }, [logs]);
 
   return (
-    <div className="mt-6 bg-white p-10 rounded-xl shadow-sm border space-y-4">
+    <div className="mt-6 bg-white p-10 rounded-xl space-y-4">
       {/* Header */}
-      <div className='p-2'>
-                    <img
-                      src={`../waterpump_connected.png`}
-                      alt="Valve"
-                      className="w-[220px] h-[220px] object-contain mb-4"
-                    />
-                  </div>
+      <div className='bg-white p-10 rounded-xl shadow-sm border'>
+        <img
+          src={`../assets/hardware/waterpump_connected.png`}
+          alt="Valve"
+          className="w-[220px] h-[220px] object-contain overflow mb-4"
+        />
+      </div>
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-green-800">
           Irrigation Log History

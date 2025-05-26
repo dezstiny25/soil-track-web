@@ -44,7 +44,7 @@ const App = () => {
           <Route path="users" element={<UserPage />} />
           <Route path="plots" element={<PlotListPage />} />
           <Route path="/plots/details/:plotId" element={<PlotsPage />} />
-          <Route path="plots/analysis" element={<PlotAnalysis />} />
+          <Route path="/plots/:plotId/analysis" element={<PlotAnalysis />} />
         </Route>
 
         <Route path="/" element={!authUser ? <AuthLayout /> : <Navigate to="/" />}>

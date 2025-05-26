@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactApexChart from 'react-apexcharts';
 import { CropCard } from '../components/CropCard';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, ArrowRight, ArrowUpRight, Filter } from 'lucide-react';
+import { usePlotStore } from "../store/usePlotStore";
 
 const WebSoilChart = ({ title }: { title: string }) => {
   const [chartData] = useState({
@@ -96,6 +97,25 @@ const WebSoilChart = ({ title }: { title: string }) => {
 const Dashboard = () => {
   const [showTrends, setShowTrends] = useState(true);
   const [showWarnings, setShowWarnings] = useState(true);
+  const plotId = usePlotStore((state) => state.selectedPlotId);
+    const aiHistory = usePlotStore((state) => state.aiHistory);
+    const getAiHistory = usePlotStore((state) => state.getAiHistory);
+  
+    const [filter, setFilter] = useState<"Daily" | "Weekly">("Weekly");
+  
+    useEffect(() => {
+      if (plotId) {
+        getAiHistory(plotId);
+      }
+    }, [plotId]);
+  
+    // Add this after fetching aiHistory
+const filteredHistory = aiHistory
+  ?.filter((entry) => entry.analysis_type === filter && entry.language_type === "en")
+  ?.sort((a, b) => new Date(b.analysis_date).getTime() - new Date(a.analysis_date).getTime());
+
+const latestFinding = filteredHistory?.[0];
+
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen font-sans">
@@ -110,7 +130,32 @@ const Dashboard = () => {
       <div className="grid md:grid-cols-3 gap-4 mb-6">
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
           <h3 className="font-semibold text-gray-800 mb-2">Area Findings</h3>
-          <p className="text-sm text-gray-600">The average soil moisture has increased from 60.2% to 67.9% over the past three days, indicating a good uptake by plant roots. However, potassium levels dropped below the acceptable range for rice from 14mmol.</p>
+          {!aiHistory ? (
+                    <div className="text-center text-gray-500">Loading...</div>
+                  ) : filteredHistory?.length === 0 ? (
+                    <div className="text-center text-gray-500">
+                      No {filter.toLowerCase()} entries found.
+                    </div>
+                  ) : (
+                    filteredHistory.map((entry, index) => (
+                      <div
+                        key={index}
+                        className="grid grid-cols-12 px-4 py-3 border-t border-gray-200 items-start"
+                      >
+                        <div className="col-span-4 font-medium text-gray-800 flex items-center gap-2">
+                          {new Date(entry.analysis_date).toLocaleDateString("en-US", {
+                            month: "long",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
+                          <ArrowUpRight size={14} className="text-gray-400" />
+                        </div>
+                        <div className="col-span-8 text-sm text-gray-600">
+                          {entry.findings}
+                        </div>
+                      </div>
+                    ))
+                  )}
         </div>
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
           <h3 className="font-semibold text-gray-800 mb-2">Area Predictions</h3>

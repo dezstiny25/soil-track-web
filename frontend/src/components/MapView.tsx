@@ -1,52 +1,81 @@
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Polygon } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import { useState, useEffect } from 'react';
-import L from 'leaflet';
 
-// Fix for default marker icons
+import { useEffect } from 'react';
+import L from 'leaflet';
+import FitBoundsHelper from '../utils/FitBoundsHelper';
+
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 
-// Add this CSS directly in the component or import from a CSS module
+import { calculateAreaInSqMeters } from '../utils/calculateArea';
+import { usePlotStore } from '../store/usePlotStore';
+
+type LatLngObject = {
+  lat: number;
+  lng: number;
+};
+
+type MapViewProps = {
+  polygons?: string;
+};
+
 const mapStyles = {
   mapContainer: {
-    height: '100%',  
+    height: '100%',
     width: '100%',
     borderRadius: '0.5rem',
     overflow: 'hidden',
-    zIndex: 1
-  }
+    zIndex: 1,
+  },
 };
 
-const position: [number, number] = [14.5995, 120.9842]; // Manila
+export default function MapView({ polygons }: MapViewProps) {
+  const setAreaInSqMeters = usePlotStore((state) => state.setAreaInSqMeters);
 
-export default function MapView() {
-  // Fix for marker icons on first render
   useEffect(() => {
-    
     L.Icon.Default.mergeOptions({
       iconRetinaUrl: icon,
       iconUrl: icon,
-      shadowUrl: iconShadow
+      shadowUrl: iconShadow,
     });
   }, []);
 
+  let parsedPoints: LatLngObject[] = [];
+  try {
+    parsedPoints = typeof polygons === 'string' ? JSON.parse(polygons) : polygons || [];
+    console.log('Parsed points:', parsedPoints);
+  } catch (err) {
+    console.error("Invalid polygon JSON:", err);
+  }
+
+  const leafletPolygon: [number, number][] = parsedPoints.map(p => [p.lat, p.lng]);
+
+  useEffect(() => {
+    if (leafletPolygon.length > 2) {
+      const area = calculateAreaInSqMeters(leafletPolygon);
+      setAreaInSqMeters(area);
+    }
+  }, [JSON.stringify(leafletPolygon)]); // Recalculate if polygon changes
+
+  const fallbackPosition: [number, number] = [14.5995, 120.9842];
+
   return (
     <div style={{ height: '100%', width: '100%' }}>
-      <MapContainer 
-        center={position} 
-        zoom={13} 
-        scrollWheelZoom={false} 
+      <MapContainer
+        center={fallbackPosition}
+        zoom={18}
+        scrollWheelZoom={false}
         style={mapStyles.mapContainer}
       >
-        <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        <Marker position={position}>
-          <Popup>
-            This is your marker location.
-          </Popup>
-        </Marker>
+        <TileLayer  url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+        attribution="Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye"/>
+        {leafletPolygon.length > 0 && (
+          <>
+            <Polygon pathOptions={{ color: 'blue' }} positions={leafletPolygon} />
+            <FitBoundsHelper bounds={leafletPolygon} />
+          </>
+        )}
       </MapContainer>
     </div>
   );

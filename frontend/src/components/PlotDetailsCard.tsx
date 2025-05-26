@@ -1,14 +1,21 @@
 import React, { useEffect } from "react";
 import { usePlotStore } from "../store/usePlotStore";
-import dashboardStyles from "../styles/dashboard.module.css";
 import { Pencil } from "lucide-react";
+import {
+  convertSqMetersToAcres,
+  convertSqMetersToSqFeet,
+} from "../utils/calculateArea";
 
 const PlotDetailsCard: React.FC = () => {
   const plotId = usePlotStore((state) => state.selectedPlotId);
   const selectedPlotDetails = usePlotStore((state) => state.selectedPlotDetails);
   const getFullPlotDetails = usePlotStore((state) => state.getFullPlotDetails);
-  const sensorCountByCategory = usePlotStore((state) => state.sensorCountByCategory);
   const getSensorCount = usePlotStore((state) => state.getSensorCount);
+  const areaInSqMeters = usePlotStore((state) => state.areaInSqMeters);
+
+const getSensorCountByCategory = usePlotStore((state) => state.sensorCountByCategory);
+const sensorCountByCategory = getSensorCountByCategory();
+
 
   useEffect(() => {
     if (plotId) {
@@ -22,11 +29,26 @@ const PlotDetailsCard: React.FC = () => {
   const moistureCount = sensorCountByCategory?.["Moisture Sensor"] || 0;
   const npkCount = sensorCountByCategory?.["NPK Sensor"] || 0;
 
+  const formattedSqMeters =
+    typeof areaInSqMeters === "number" && !isNaN(areaInSqMeters)
+      ? areaInSqMeters.toFixed(2)
+      : null;
+
+    const areaInHectares = formattedSqMeters
+    ? (Number(formattedSqMeters) / 10000).toFixed(2)
+    : null;
+
   return (
-    <div className="rounded-xl shadow-md bg-white p-4 border border-gray-200 w-full max-w-md mx-auto my-4">
-      <div className="flex justify-between items-center text-sm font-medium text-gray-600 mb-4">
+    <div>
+      <div className="flex justify-between items-center text-sm font-medium text-gray-900 mb-4 bg-gray-100 p-3 rounded-lg">
         <span>Plot Details:</span>
-        <span className="text-gray-400">10 acres</span>
+        {formattedSqMeters ? (
+          <div className="text-right text-gray-500 text-sm">
+            <div>{areaInHectares} ha</div>
+          </div>
+        ) : (
+          <span className="text-red-500">Area not available</span>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-3 text-sm">
@@ -54,9 +76,9 @@ const PlotDetailsCard: React.FC = () => {
         </div>
 
         <div className="border rounded-lg p-3 bg-gray-50">
-          <div className="text-gray-500">Npk Sensors:</div>
+          <div className="text-gray-500">NPK Sensors:</div>
           <div className="text-green-700 font-bold text-lg">
-            {npkCount}  sensor{npkCount !== 1 ? "s" : ""}
+            {npkCount} sensor{npkCount !== 1 ? "s" : ""}
           </div>
         </div>
       </div>
