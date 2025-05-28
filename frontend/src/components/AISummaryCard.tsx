@@ -1,30 +1,60 @@
-// components/AISummaryCard.tsx
 import React, { useEffect } from "react";
 import { usePlotStore } from "../store/usePlotStore";
-import { useAuthStore } from '../store/useAuthStore';
-import dashboardStyles from '../styles/dashboard.module.css';
+import { useAuthStore } from "../store/useAuthStore";
+import dashboardStyles from "../styles/dashboard.module.css";
 
 const AISummaryCard: React.FC = () => {
-  const plotId = usePlotStore((state) => state.selectedPlotId);
-  const aiSummary = usePlotStore((state) => state.aiSummary);
-  const getAiSummary = usePlotStore((state) => state.getAiSummary);
+  const selectedPlotId = usePlotStore((state) => state.selectedPlotId);
+  const aiHistory = usePlotStore((state) => state.aiHistory);
+  const getAiHistory = usePlotStore((state) => state.getAiHistory);
   const authUser = useAuthStore((state) => state.authUser);
 
   useEffect(() => {
-    if (plotId) {
-      getAiSummary(plotId);
+    if (selectedPlotId) {
+      getAiHistory(selectedPlotId);
     }
-  }, [plotId]);
+  }, [selectedPlotId, getAiHistory]);
+
+  console.log("AI History:", aiHistory);
+
+  if (!selectedPlotId) {
+    return <p>Please select a plot to see AI summary.</p>;
+  }
+
+  if (!aiHistory) {
+    return <p>Loading AI summary...</p>;
+  }
+
+  // Filter English entries with complete AI_Analysis content
+  const englishEntries = aiHistory.filter(
+    (entry) =>
+      entry.language_type?.toLowerCase() === "en" &&
+      entry.analysis?.headline &&
+      entry.analysis?.short_summary &&
+      entry.analysis?.AI_Analysis?.date
+  );
+
+  if (englishEntries.length === 0) {
+    return <p>No English AI summary available for this plot.</p>;
+  }
+
+  // Sort entries by date (descending) and pick the latest
+  const latestEntry = englishEntries.reduce((latest, current) => {
+    return new Date(current.analysis.AI_Analysis.date) >
+      new Date(latest.analysis.AI_Analysis.date)
+      ? current
+      : latest;
+  });
+
+  const { headline, short_summary } = latestEntry?.analysis;
 
   return (
     <div className="rounded-xl bg-white p-9">
-      <span className={dashboardStyles.subHeading}>Hey, <span className="font-bold">{authUser?.userFname || 'Guest Account'}! 👋</span></span>
-      <h2 className="text-[50px] font-bold text-green-900 mb-2">
-        {aiSummary?.headline || "AI Summary Unavailable"}
-      </h2>
-      <p className="text-gray-800 w-3/4 text-lg">
-        {aiSummary?.short_summary || "No summary data found for this plot."}
-      </p>
+      <span className={dashboardStyles.subHeading}>
+        Hey, <span className="font-bold">{authUser?.userFname || "Guest Account"}! 👋</span>
+      </span>
+      <h2 className="text-[50px] font-bold text-green-900 mb-2">{headline}</h2>
+      <p className="text-gray-800 w-3/4 text-lg">{short_summary}</p>
     </div>
   );
 };

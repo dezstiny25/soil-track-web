@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import ReactApexChart from 'react-apexcharts';
+import dayjs from 'dayjs';
 import { MoistureReading, NutrientReading } from '../../store/usePlotStore';
 
 interface WebSoilChartProps {
@@ -8,17 +9,37 @@ interface WebSoilChartProps {
 }
 
 const WebSoilChart: React.FC<WebSoilChartProps> = ({ moistureData, nutrientData }) => {
-  const categories = moistureData.map((m) => m.read_time);
+  const latestMoistureDate = useMemo(() => {
+    if (!moistureData.length) return null;
+    return dayjs(moistureData[moistureData.length - 1].read_time).format('YYYY-MM-DD');
+  }, [moistureData]);
+
+  const filteredMoisture = useMemo(() => {
+    return moistureData.filter(m =>
+      dayjs(m.read_time).format('YYYY-MM-DD') === latestMoistureDate
+    ).map(m => ({
+      x: m.read_time,
+      y: m.soil_moisture,
+    }));
+  }, [moistureData, latestMoistureDate]);
+
+  const filteredNutrients = useMemo(() => {
+    return nutrientData.filter(n =>
+      dayjs(n.read_time).format('YYYY-MM-DD') === latestMoistureDate
+    ).map(n => ({
+      x: n.read_time,
+      y: (n.readed_nitrogen + n.readed_phosphorus + n.readed_potassium) / 3,
+    }));
+  }, [nutrientData, latestMoistureDate]);
+
   const series = [
     {
       name: 'Moisture',
-      data: moistureData.map((m) => m.soil_moisture),
+      data: filteredMoisture,
     },
     {
-      name: 'Nutrients',
-      data: nutrientData.map((n) =>
-        (n.readed_nitrogen + n.readed_phosphorus + n.readed_potassium) / 3
-      ),
+      name: 'Avg Nutrients',
+      data: filteredNutrients,
     },
   ];
 
@@ -42,7 +63,6 @@ const WebSoilChart: React.FC<WebSoilChartProps> = ({ moistureData, nutrientData 
     },
     xaxis: {
       type: 'datetime',
-      categories,
       labels: {
         style: { colors: '#666', fontSize: '12px' },
       },
@@ -53,8 +73,8 @@ const WebSoilChart: React.FC<WebSoilChartProps> = ({ moistureData, nutrientData 
       },
     },
     tooltip: {
-      x: { format: 'dd MMM yyyy' },
-      y: { formatter: (val: number) => `${val}%` },
+      x: { format: 'dd MMM yyyy HH:mm' },
+      y: { formatter: (val: number) => `${val.toFixed(2)}%` },
     },
     legend: {
       position: 'top',

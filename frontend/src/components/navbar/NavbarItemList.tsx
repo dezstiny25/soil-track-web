@@ -58,7 +58,9 @@ export default function NavbarItemsList() {
       <NavbarItem
         icon={<BarChart3 size={16} />}
         text="Plots"
-        active={currentPath === "/plots"}
+        active={
+          currentPath.startsWith("/plots") || currentPath.startsWith("/plot-analysis")
+        }
         alert={false}
         onClick={() => navigate("/plots")}
       />

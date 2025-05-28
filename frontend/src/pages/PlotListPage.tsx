@@ -14,17 +14,16 @@ const PlotListPage = () => {
   const authUser = useAuthStore((state) => state.authUser);
   const { plots, getUserPlot, setSelectedPlotId } = usePlotStore();
 
-  // Local state to keep sensor counts keyed by plotId
   const [sensorCountsByPlot, setSensorCountsByPlot] = useState<Record<string, SensorCountByCategory>>({});
 
-  // Load user plots on authUser change
+  // Load user plots
   useEffect(() => {
     if (authUser?.user_id) {
       getUserPlot(authUser.user_id);
     }
   }, [authUser?.user_id, getUserPlot]);
 
-  // When plots load, fetch sensor counts for each plot individually
+  // Fetch sensor counts for each plot
   useEffect(() => {
     if (plots && plots.length > 0) {
       plots.forEach(async (plot) => {
@@ -47,7 +46,6 @@ const PlotListPage = () => {
     }
   }, [plots]);
 
-  // Navigate to plot details page and set selected plot id in Zustand store
   const goToPlotPage = (plotId: string) => {
     setSelectedPlotId(plotId);
     navigate(`/plots/details/${plotId}`);
@@ -66,10 +64,9 @@ const PlotListPage = () => {
       {plots && plots.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {plots.map((plot) => {
-            const sensorCounts = sensorCountsByPlot[plot.plot_id] || {};
-
-            const hasSoilMoistureSensors = (sensorCounts["Moisture Sensor"] ?? 0) > 0;
-            const hasNpkSensors = (sensorCounts["NPK Sensor"] ?? 0) > 0;
+            const sensorCounts = sensorCountsByPlot[plot.plot_id];
+            const hasSoilMoistureSensors = (sensorCounts?.["Moisture Sensor"] ?? 0) > 0;
+            const hasNpkSensors = (sensorCounts?.["NPK Sensor"] ?? 0) > 0;
 
             return (
               <div
@@ -82,16 +79,42 @@ const PlotListPage = () => {
                     <h2 className="text-2xl font-semibold text-green-900">
                       {plot.plot_name}
                     </h2>
+
                     <p className="text-sm text-gray-900 bg-gray-100 font-bold p-2 rounded mt-1">
                       Soil Moisture Sensors:{" "}
-                      <span className={hasSoilMoistureSensors ? "text-gray-900" : "text-red-500"}>
-                        {hasSoilMoistureSensors ? "Assigned" : "None"}
+                      <span
+                        className={
+                          sensorCounts
+                            ? hasSoilMoistureSensors
+                              ? "text-gray-900"
+                              : "text-red-500"
+                            : "text-gray-400 italic"
+                        }
+                      >
+                        {!sensorCounts
+                          ? "Checking..."
+                          : hasSoilMoistureSensors
+                          ? "Assigned"
+                          : "None"}
                       </span>
                     </p>
+
                     <p className="text-sm text-gray-900 bg-gray-100 font-bold p-2 rounded mt-1">
                       NPK Sensors:{" "}
-                      <span className={hasNpkSensors ? "text-green-900" : "text-red-500"}>
-                        {hasNpkSensors ? "Assigned" : "None"}
+                      <span
+                        className={
+                          sensorCounts
+                            ? hasNpkSensors
+                              ? "text-green-900"
+                              : "text-red-500"
+                            : "text-gray-400 italic"
+                        }
+                      >
+                        {!sensorCounts
+                          ? "Checking..."
+                          : hasNpkSensors
+                          ? "Assigned"
+                          : "None"}
                       </span>
                     </p>
                   </div>

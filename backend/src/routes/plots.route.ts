@@ -1,4 +1,6 @@
-import express , { Request, Response } from "express";
+// plots.route.ts
+
+import express, { Request, Response } from "express";
 import supabase from "../lib/supabase";
 
 const router = express.Router();
@@ -7,37 +9,37 @@ router.get("/get-plots", async (req, res) => {
   const user_id = req.query.user_id as string;
 
   if (!user_id) {
-    res.status(400).json({ error: "Missing user_id" });
+     res.status(400).json({ error: "Missing user_id" });
   }
 
   const { data, error } = await supabase
     .from("user_plots")
     .select(`
-        plot_id,
-        plot_name,
-        user_crops (
-            crop_name,
-            category,
-            moisture_min,
-            moisture_max,
-            nitrogen_max
-        )
+      plot_id,
+      plot_name,
+      user_crops (
+        crop_name,
+        category,
+        moisture_min,
+        moisture_max,
+        nitrogen_max
+      )
     `)
     .eq("user_id", user_id);
 
   if (error) {
      res.status(500).json({ error: error.message });
   }
-res.json({ plots: data });
-console.log("plots working", data);
 
+  console.log("plots working", data);
+  res.json({ plots: data });
 });
 
 router.get("/get-plot", async (req, res) => {
   const plot_id = req.query.plot_id as string;
 
   if (!plot_id) {
-    res.status(400).json({ error: "Missing plot_id" });
+     res.status(400).json({ error: "Missing plot_id" });
   }
 
   const { data, error } = await supabase
@@ -65,20 +67,20 @@ router.get("/get-plot", async (req, res) => {
     .single();
 
   if (error) {
-    res.status(500).json({ error: error.message });
+     res.status(500).json({ error: error.message });
   }
 
   res.json({ plot: data });
 });
+
 router.get("/analytics", async (req, res) => {
   const plot_id = req.query.plot_id as string;
 
   if (!plot_id) {
-   res.status(400).json({ message: "Missing plot_id in query" });
+     res.status(400).json({ message: "Missing plot_id in query" });
   }
 
   try {
-    // 👇 Replace this with your actual Supabase query
     const { data: plot, error: plotError } = await supabase
       .from("user_plots")
       .select(`
@@ -123,7 +125,7 @@ router.get("/analytics", async (req, res) => {
 
     if (irrigationError) throw irrigationError;
 
-      res.json({
+    res.json({
       plot,
       moisture_readings,
       nutrient_readings,
@@ -134,17 +136,15 @@ router.get("/analytics", async (req, res) => {
     res.status(500).json({ message: "Failed to fetch plot analytics", error });
   }
 });
+
 router.get("/ai-summary", async (req, res) => {
   const plot_id = req.query.plot_id as string;
-
-  if (!plot_id) {
-    res.status(400).json({ error: "Missing plot_id" });
-  }
+  if (!plot_id) res.status(400).json({ error: "Missing plot_id" });
 
   try {
     const { data, error } = await supabase
       .from("ai_analysis")
-      .select("analysis")
+      .select("*, language_type") // added language_type
       .eq("plot_id", plot_id)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -153,14 +153,13 @@ router.get("/ai-summary", async (req, res) => {
     if (error || !data) throw error;
 
     const analysis = data.analysis;
-    const parsed =
-      typeof analysis === "string" ? JSON.parse(analysis) : analysis;
-
+    const parsed = typeof analysis === "string" ? JSON.parse(analysis) : analysis;
     const summary = parsed.AI_Analysis;
 
     res.json({
       headline: summary.headline,
       short_summary: summary.short_summary,
+      language_type: data.language_type || parsed.AI_Analysis.language_type || "unknown",
     });
   } catch (error) {
     console.error("Failed to fetch or parse AI analysis:", error);
@@ -168,34 +167,53 @@ router.get("/ai-summary", async (req, res) => {
   }
 });
 
+
+// Revised ai-history route with language_type included
 router.get("/ai-history", async (req, res) => {
   const plot_id = req.query.plot_id as string;
 
   if (!plot_id) {
-    res.status(400).json({ error: "Missing plot_id" });
+     res.status(400).json({ error: "Missing plot_id" });
   }
 
   try {
+    // Select language_type assuming it's a column in ai_analysis table
     const { data, error } = await supabase
       .from("ai_analysis")
-      .select("analysis_date, analysis, analysis_type")
+      .select("analysis_date, analysis, analysis_type, language_type")
       .eq("plot_id", plot_id)
       .order("analysis_date", { ascending: false });
 
     if (error) throw error;
 
     const parsedHistory = data.map((entry) => {
-    const parsed =
-      typeof entry.analysis === "string"
-        ? JSON.parse(entry.analysis)
-        : entry.analysis;
+    const parsed = typeof entry.analysis === "string" ? JSON.parse(entry.analysis) : entry.analysis;
+    const languageTypeFromJson = parsed?.AI_Analysis?.language_type;
+    const languageType = entry.language_type || languageTypeFromJson || "unknown";
 
-    return {
+  return {
+    language_type: languageType,
+    analysis_type: entry.analysis_type || "unknown",
+    analysis: {
       analysis_date: entry.analysis_date,
-      analysis_type: entry.analysis_type,
-      findings: parsed?.AI_Analysis?.summary?.findings || "No findings",
-    };
-  });
+      headline: parsed?.AI_Analysis?.headline || "No headline",
+      short_summary: parsed?.AI_Analysis?.short_summary || "No summary",
+      AI_Analysis: {
+        date: entry.analysis_date,
+        status: parsed?.AI_Analysis?.status || "unknown",
+        summary: {
+          findings: parsed?.AI_Analysis?.summary?.findings || "No findings",
+          predictions: parsed?.AI_Analysis?.summary?.predictions || "No predictions",
+          recommendations: parsed?.AI_Analysis?.summary?.recommendations || "No recommendations",
+        },
+        warnings: {
+          drought_risks: parsed?.AI_Analysis?.warnings?.drought_risks || "No drought risks",
+          nutrient_imbalances: parsed?.AI_Analysis?.warnings?.nutrient_imbalances || "No nutrient imbalance",
+        },
+      },
+    },
+  };
+});
 
 
     res.json({ history: parsedHistory });
@@ -208,7 +226,7 @@ router.get("/ai-history", async (req, res) => {
 router.get("/sensor-count", async (req, res) => {
   const plot_id = req.query.plot_id as string;
   if (!plot_id) {
-    res.status(400).json({ error: "Missing plot_id" });
+     res.status(400).json({ error: "Missing plot_id" });
   }
 
   try {
@@ -235,10 +253,12 @@ router.get("/sensor-count", async (req, res) => {
   }
 });
 
-// ✅ New Route to fetch irrigation history across all plots for a user
+// New Route to fetch irrigation history across all plots for a user
 router.get("/irrigation-history", async (req, res) => {
   const user_id = req.query.user_id as string;
-  if (!user_id) res.status(400).json({ error: "Missing user_id" });
+  if (!user_id) {
+     res.status(400).json({ error: "Missing user_id" });
+  }
 
   try {
     const { data, error } = await supabase
@@ -272,7 +292,5 @@ router.get("/irrigation-history", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch irrigation history" });
   }
 });
-
-
 
 export default router;

@@ -53,9 +53,11 @@ export interface PlotDetails {
   irrigation_logs: IrrigationLog[];
 }
 
+// Adjusted AiSummary interface according to new backend response
 export interface AiSummary {
-  summary_analysis: string;
-  analysis_date: string;
+  headline: string;
+  short_summary: string;
+  language_type: string;  // new field to track language of summary
 }
 
 export interface PlotDetailsCardProps {
@@ -68,9 +70,25 @@ export interface PlotDetailsCardProps {
 }
 
 export interface AIHistoryEntry {
-  analysis_date: string;
+  language_type: string;
   analysis_type: string;
-  findings: string;
+  analysis: {
+    short_summary: string;
+    headline: string;
+    AI_Analysis: {
+      date: string;
+      status: string;
+      summary: {
+        findings: string;
+        predictions: string;
+        recommendations: string;
+      };
+      warnings: {
+        drought_risks: string;
+        nutrient_imbalances: string;
+      };
+    };
+  };
 }
 
 interface SensorCountByCategory {
@@ -93,7 +111,6 @@ interface PlotState {
   aiSummary: AiSummary | null;
   getAiSummary: (plotId: string) => Promise<void>;
 
-  // Store sensor counts for each plot by plot_id
   sensorCountsByPlot: Record<string, SensorCountByCategory>;
   getSensorCount: (plotId: string) => Promise<void>;
   sensorCountByCategory: () => SensorCountByCategory;
@@ -109,12 +126,9 @@ interface PlotState {
   globalIrrigationLogs: GlobalIrrigationLog[];
   getGlobalIrrigationLogs: (userId: string) => Promise<void>;
 
-
   getUserPlot: (userId: string) => Promise<void>;
   getFullPlotDetails: (plotId: string) => Promise<void>;
   setSelectedPlotId: (plotId: string) => void;
-
-  
 }
 
 // Utility: fallback-safe promise handler
@@ -131,7 +145,7 @@ const safeAsync = async <T>(
   }
 };
 
-// ✅ Internal: fetch plot list by user_id
+// Fetch plot list by user_id
 export const getPlotList = async (userId: string) => {
   return await safeAsync(
     axiosInstance.get("/plots/get-plots", { params: { user_id: userId } }),
@@ -139,7 +153,7 @@ export const getPlotList = async (userId: string) => {
   );
 };
 
-// ✅ Internal: fetch full plot details by plot_id
+// Fetch full plot details by plot_id
 export const getPlotDetails = async (plotId: string): Promise<PlotDetails | null> => {
   try {
     const res = await axiosInstance.get("/plots/analytics", {
@@ -155,18 +169,21 @@ export const getPlotDetails = async (plotId: string): Promise<PlotDetails | null
       irrigation_logs: res.data.irrigation_logs,
     };
   } catch (err: any) {
-    const errorMessage = err.response?.data?.message || err.message || "Unknown error occurred";
+    const errorMessage =
+      err.response?.data?.message || err.message || "Unknown error occurred";
     alert(`Failed to fetch plot details: ${errorMessage}`);
     return null;
   }
 };
 
-// ✅ Zustand store
+// Zustand store
 export const usePlotStore = create<PlotState>((set, get) => ({
   plots: null,
   selectedPlotId: null,
   selectedPlotDetails: null,
-  sensorCountsByPlot: {}, // store counts by plot id
+  sensorCountsByPlot: {},
+
+  aiSummary: null,
   aiHistory: null,
 
   areaInSqMeters: null,
@@ -185,10 +202,9 @@ export const usePlotStore = create<PlotState>((set, get) => ({
 
       try {
         const rawPolygons = plotDetails.plot_deets.polygons;
-        // polygons might be a JSON string; parse if needed
-        const polygons = typeof rawPolygons === "string" ? JSON.parse(rawPolygons) : rawPolygons;
+        const polygons =
+          typeof rawPolygons === "string" ? JSON.parse(rawPolygons) : rawPolygons;
 
-        // Check if polygons is an array of LatLngExpression
         if (Array.isArray(polygons) && polygons.length > 0) {
           const area = calculateAreaInSqMeters(polygons);
           set({ areaInSqMeters: area });
@@ -206,16 +222,16 @@ export const usePlotStore = create<PlotState>((set, get) => ({
     set({ selectedPlotId: plotId });
   },
 
-  aiSummary: null,
-
   getAiSummary: async (plotId: string) => {
     try {
       const res = await axiosInstance.get("/plots/ai-summary", {
         params: { plot_id: plotId },
       });
+      // Expecting { headline, short_summary, language_type }
       set({ aiSummary: res.data });
     } catch (error) {
       console.error("Failed to fetch AI summary:", error);
+      set({ aiSummary: null });
     }
   },
 
@@ -242,18 +258,18 @@ export const usePlotStore = create<PlotState>((set, get) => ({
     }
   },
 
-    sensorCountByCategory: () => {
+  sensorCountByCategory: () => {
     const plotId = get().selectedPlotId;
     if (!plotId) return {};
     return get().sensorCountsByPlot[plotId] || {};
   },
-
 
   getAiHistory: async (plotId: string) => {
     try {
       const res = await axiosInstance.get("/plots/ai-history", {
         params: { plot_id: plotId },
       });
+      // Expecting response: { history: AIHistoryEntry[] }
       set({ aiHistory: res.data.history });
     } catch (error) {
       console.error("Failed to fetch AI history", error);
@@ -279,7 +295,7 @@ export const usePlotStore = create<PlotState>((set, get) => ({
     return Object.entries(grouped).map(([date, count]) => ({ date, count }));
   },
 
-  globalIrrigationLogs: [] as GlobalIrrigationLog[],
+  globalIrrigationLogs: [],
   getGlobalIrrigationLogs: async (userId: string) => {
     try {
       const res = await axiosInstance.get("/plots/irrigation-history", {
@@ -291,8 +307,4 @@ export const usePlotStore = create<PlotState>((set, get) => ({
       set({ globalIrrigationLogs: [] });
     }
   },
-
-
-
-
 }));

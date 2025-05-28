@@ -66,20 +66,19 @@ export default function PlotsPage() {
                 </div>
             </div>
           </div>
-        <div className="grid grid-cols-6 gap-4 bg-white p-4 rounded-lg shadow-sm">
-          {/* MOISTURE 1ST COLUMN – spans 3 columns */}
-          <div className="col-span-4 p-4 rounded bg-white">
-            <h2 className="text-lg font-semibold mb-2">Latest Moisture Readings</h2>
-            <p>
-              {latestMoisture
-                ? `${latestMoisture.soil_moisture}% on ${new Date(latestMoisture.read_time).toLocaleString()}`
-                : 'No moisture data'}
-            </p>
-            <WebSoilChart
-              moistureData={moisture_readings.slice(-4)}
-              nutrientData={nutrient_readings.slice(-4)}
-            />
-          </div>
+       <div className="grid grid-cols-6 gap-4 bg-white p-4 rounded-lg shadow-sm">
+  {/* SOIL DATA CHART – spans 4 columns */}
+  <div className="col-span-4 p-4 rounded bg-white">
+    <h2 className="text-lg font-semibold mb-2">Soil Moisture & Nutrient Trends</h2>
+    <p className="text-sm text-gray-500 mb-2">
+      Tracks soil moisture (%) and average nutrient concentration over time.
+    </p>
+    <WebSoilChart
+      moistureData={moisture_readings}
+      nutrientData={nutrient_readings}
+    />
+  </div>
+
 
           {/* NUTRIENTS 2ND COLUMN – spans 2 columns */}
           <div className="col-span-2 space-y-4">
@@ -88,30 +87,21 @@ export default function PlotsPage() {
               <p className="text-xl font-bold text-black">
                 {latestNutrients?.readed_nitrogen ?? 'N/A'} mg/l
               </p>
-              <WebSmallChart
-                label="Nitrogen"
-                data={nutrient_readings.slice(-4).map((n) => n.readed_nitrogen)}
-              />
+             <WebSmallChart label="Nitrogen" readings={selectedPlotDetails.nutrient_readings} />
             </div>
             <div className="border p-4 rounded bg-white">
               <h2 className="text-sm text-gray-500">Phosphorus</h2>
               <p className="text-xl font-bold text-black">
                 {latestNutrients?.readed_phosphorus ?? 'N/A'} mg/l
               </p>
-              <WebSmallChart
-                label="Phosphorus"
-                data={nutrient_readings.slice(-4).map((n) => n.readed_phosphorus)}
-              />
+             <WebSmallChart label="Phosphorus" readings={selectedPlotDetails.nutrient_readings} />
             </div>
             <div className="border p-4 rounded bg-white">
               <h2 className="text-sm text-gray-500">Potassium</h2>
               <p className="text-xl font-bold text-black">
                 {latestNutrients?.readed_potassium ?? 'N/A'} mg/l
               </p>
-              <WebSmallChart
-                label="Potassium"
-                data={nutrient_readings.slice(-4).map((n) => n.readed_potassium)}
-              />
+              <WebSmallChart label="Potassium" readings={selectedPlotDetails.nutrient_readings} />
             </div>
           </div>
         </div>
