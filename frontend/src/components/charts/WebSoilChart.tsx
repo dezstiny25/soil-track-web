@@ -6,31 +6,58 @@ import { MoistureReading, NutrientReading } from '../../store/usePlotStore';
 interface WebSoilChartProps {
   moistureData: MoistureReading[];
   nutrientData: NutrientReading[];
+  filterType: '1D' | '1W' | '1M' | '3M' | 'custom';
+  selectedDate: Date;
 }
 
-const WebSoilChart: React.FC<WebSoilChartProps> = ({ moistureData, nutrientData }) => {
-  const latestMoistureDate = useMemo(() => {
-    if (!moistureData.length) return null;
-    return dayjs(moistureData[moistureData.length - 1].read_time).format('YYYY-MM-DD');
-  }, [moistureData]);
+const WebSoilChart: React.FC<WebSoilChartProps> = ({
+  moistureData,
+  nutrientData,
+  filterType,
+  selectedDate
+}) => {
+  const startDate = useMemo(() => {
+    const base = dayjs(selectedDate);
+    switch (filterType) {
+      case '1D':
+        return base.startOf('day');
+      case '1W':
+        return base.subtract(7, 'day');
+      case '1M':
+        return base.subtract(1, 'month');
+      case '3M':
+        return base.subtract(3, 'month');
+      case 'custom':
+      default:
+        return base.startOf('day');
+    }
+  }, [filterType, selectedDate]);
+
+  const endDate = useMemo(() => dayjs(selectedDate).endOf('day'), [selectedDate]);
 
   const filteredMoisture = useMemo(() => {
-    return moistureData.filter(m =>
-      dayjs(m.read_time).format('YYYY-MM-DD') === latestMoistureDate
-    ).map(m => ({
-      x: m.read_time,
-      y: m.soil_moisture,
-    }));
-  }, [moistureData, latestMoistureDate]);
+    return moistureData
+      .filter((m) => {
+        const readTime = dayjs(m.read_time);
+        return readTime.isAfter(startDate) && readTime.isBefore(endDate);
+      })
+      .map((m) => ({
+        x: m.read_time,
+        y: m.soil_moisture,
+      }));
+  }, [moistureData, startDate, endDate]);
 
   const filteredNutrients = useMemo(() => {
-    return nutrientData.filter(n =>
-      dayjs(n.read_time).format('YYYY-MM-DD') === latestMoistureDate
-    ).map(n => ({
-      x: n.read_time,
-      y: (n.readed_nitrogen + n.readed_phosphorus + n.readed_potassium) / 3,
-    }));
-  }, [nutrientData, latestMoistureDate]);
+    return nutrientData
+      .filter((n) => {
+        const readTime = dayjs(n.read_time);
+        return readTime.isAfter(startDate) && readTime.isBefore(endDate);
+      })
+      .map((n) => ({
+        x: n.read_time,
+        y: (n.readed_nitrogen + n.readed_phosphorus + n.readed_potassium) / 3,
+      }));
+  }, [nutrientData, startDate, endDate]);
 
   const series = [
     {

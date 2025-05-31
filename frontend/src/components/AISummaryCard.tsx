@@ -49,7 +49,7 @@ const AISummaryCard: React.FC = () => {
   const { headline, short_summary } = latestEntry?.analysis;
 
   return (
-    <div className="rounded-xl bg-white p-9">
+    <div className="rounded-xl bg-white p-12 py-14 space-y-4">
       <span className={dashboardStyles.subHeading}>
         Hey, <span className="font-bold">{authUser?.userFname || "Guest Account"}! 👋</span>
       </span>

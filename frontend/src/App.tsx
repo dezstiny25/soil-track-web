@@ -18,6 +18,7 @@ import SignupForm from "./pages/auth/SignupForm";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
 import useThemeStore from "./store/useThemeStore";
+import WebDevices from "./pages/web_devices";
 
 
 const App = () => {
@@ -45,6 +46,7 @@ const App = () => {
           <Route path="plots" element={<PlotListPage />} />
           <Route path="/plots/details/:plotId" element={<PlotsPage />} />
           <Route path="/plots/:plotId/analysis" element={<PlotAnalysis />} />
+          <Route path="devices" element={<WebDevices />} />
         </Route>
 
         <Route path="/" element={!authUser ? <AuthLayout /> : <Navigate to="/" />}>

@@ -1,36 +1,33 @@
-// components/GlobalIrrigationHistory.tsx
 import { useEffect, useState } from "react";
 import { usePlotStore } from "../store/usePlotStore";
+import { ArrowUpRight, ArrowRight } from "lucide-react";
+
+const DEFAULT_ITEMS = 5;
+const EXPANDED_ITEMS = 10;
 
 export default function GlobalIrrigationHistory({ userId }: { userId: string }) {
   const { globalIrrigationLogs, getGlobalIrrigationLogs } = usePlotStore();
 
   const [page, setPage] = useState(1);
-  const [logsPerPage, setLogsPerPage] = useState(5);
   const [showMore, setShowMore] = useState(false);
 
   useEffect(() => {
     if (userId) {
       getGlobalIrrigationLogs(userId);
-      // Reset pagination state when user changes
       setPage(1);
-      setLogsPerPage(5);
       setShowMore(false);
     }
   }, [userId]);
 
-  // Pagination calculations
+  const logsPerPage = showMore ? EXPANDED_ITEMS : DEFAULT_ITEMS;
   const totalLogs = globalIrrigationLogs.length;
   const totalPages = Math.ceil(totalLogs / logsPerPage);
 
-  // Slice logs to show for current page
-  const currentLogs = globalIrrigationLogs.slice(
-    (page - 1) * logsPerPage,
-    page * logsPerPage
-  );
+  const startIndex = (page - 1) * logsPerPage;
+  const endIndex = page * logsPerPage;
+  const currentLogs = globalIrrigationLogs.slice(startIndex, endIndex);
 
   const handleSeeMore = () => {
-    setLogsPerPage(10);
     setShowMore(true);
     setPage(1);
   };
@@ -42,94 +39,100 @@ export default function GlobalIrrigationHistory({ userId }: { userId: string }) 
   };
 
   return (
-    <div className="p-4 bg-white shadow rounded-xl mt-4">
-      <h2 className="text-xl font-semibold mb-4">Irrigation Logs</h2>
+    <div className="mt-6 bg-white p-10 rounded-xl shadow-sm border space-y-4">
+      <h2 className="text-lg font-semibold text-green-800">Irrigation Log History</h2>
 
-      {totalLogs === 0 ? (
-        <p>No irrigation logs found.</p>
-      ) : (
-        <>
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead className="bg-gray-100">
-                <tr>
-                  <th className="p-2 text-left">Plot</th>
-                  <th className="p-2 text-left">Start Time</th>
-                  <th className="p-2 text-left">Stop Time</th>
-                  <th className="p-2 text-center">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {currentLogs.map((log, i) => (
-                  <tr key={i} className="border-b">
-                    <td className="p-2">{log.plot_name}</td>
-                    <td className="p-2">{new Date(log.time_started).toLocaleString()}</td>
-                    <td className="p-2">{new Date(log.time_stopped).toLocaleString()}</td>
-                    <td className="p-2 text-center">
-                      <button className="bg-blue-500 text-white px-3 py-1 rounded">
-                        Details
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+      {/* Table Header */}
+      <div className="grid grid-cols-12 px-4 py-2 text-sm font-medium text-gray-500 bg-gray-100 rounded">
+        <div className="col-span-3">Plot</div>
+        <div className="col-span-4">Start Time</div>
+        <div className="col-span-4">Stop Time</div>
+        <div className="col-span-1 text-center">Action</div>
+      </div>
 
-          {/* See More Button */}
-          {!showMore && totalLogs > 5 && (
-            <div className="mt-4">
-              <button
-                onClick={handleSeeMore}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+      {/* Table Body */}
+      <div className="space-y-2">
+        {totalLogs === 0 ? (
+          <div className="text-center text-gray-500">No irrigation logs found.</div>
+        ) : (
+          currentLogs.map((log, i) => {
+            const start = new Date(log.time_started).toLocaleString();
+            const stop = new Date(log.time_stopped).toLocaleString();
+
+            return (
+              <div
+                key={i}
+                className="grid grid-cols-12 px-4 py-3 border-t border-gray-200 items-start"
               >
-                See More
-              </button>
-            </div>
-          )}
+                <div className="col-span-3 font-medium text-gray-800 flex items-center gap-2">
+                  {log.plot_name}
+                  <ArrowUpRight size={14} className="text-gray-400" />
+                </div>
+                <div className="col-span-4 text-sm text-gray-600">{start}</div>
+                <div className="col-span-4 text-sm text-gray-600">{stop}</div>
+                <div className="col-span-1 flex justify-center">
+                  <button className="text-sm text-blue-600 hover:underline">Details</button>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
 
-          {/* Pagination Controls */}
-          {showMore && totalPages > 1 && (
-            <div className="mt-4 flex space-x-2 justify-center">
+      {/* See More Button */}
+      {!showMore && totalLogs > DEFAULT_ITEMS && (
+        <div
+          onClick={handleSeeMore}
+          className="text-sm text-center text-green-800 mt-2 hover:underline cursor-pointer flex items-center justify-center gap-1"
+        >
+          See more <ArrowRight size={14} />
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {showMore && totalPages > 1 && (
+        <div className="mt-4 flex justify-center space-x-2">
+          <button
+            onClick={() => handlePageChange(page - 1)}
+            disabled={page === 1}
+            className={`px-3 py-1 rounded-full text-sm ${
+              page === 1
+                ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                : "bg-green-900 text-white hover:bg-green-800"
+            }`}
+          >
+            Prev
+          </button>
+
+          {[...Array(totalPages)].map((_, idx) => {
+            const pageNumber = idx + 1;
+            return (
               <button
-                onClick={() => handlePageChange(page - 1)}
-                disabled={page === 1}
-                className={`px-3 py-1 rounded ${
-                  page === 1 ? "bg-gray-300 cursor-not-allowed" : "bg-blue-600 text-white"
+                key={pageNumber}
+                onClick={() => handlePageChange(pageNumber)}
+                className={`px-3 py-1 rounded-full text-sm ${
+                  page === pageNumber
+                    ? "bg-green-900 text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
               >
-                Prev
+                {pageNumber}
               </button>
+            );
+          })}
 
-              {[...Array(totalPages)].map((_, idx) => {
-                const pageNumber = idx + 1;
-                return (
-                  <button
-                    key={pageNumber}
-                    onClick={() => handlePageChange(pageNumber)}
-                    className={`px-3 py-1 rounded ${
-                      page === pageNumber
-                        ? "bg-blue-800 text-white"
-                        : "bg-blue-600 text-white"
-                    }`}
-                  >
-                    {pageNumber}
-                  </button>
-                );
-              })}
-
-              <button
-                onClick={() => handlePageChange(page + 1)}
-                disabled={page === totalPages}
-                className={`px-3 py-1 rounded ${
-                  page === totalPages ? "bg-gray-300 cursor-not-allowed" : "bg-blue-600 text-white"
-                }`}
-              >
-                Next
-              </button>
-            </div>
-          )}
-        </>
+          <button
+            onClick={() => handlePageChange(page + 1)}
+            disabled={page === totalPages}
+            className={`px-3 py-1 rounded-full text-sm ${
+              page === totalPages
+                ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                : "bg-green-900 text-white hover:bg-green-800"
+            }`}
+          >
+            Next
+          </button>
+        </div>
       )}
     </div>
   );

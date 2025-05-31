@@ -28,7 +28,7 @@ const IrrigationLogHistory: React.FC = () => {
         <img
           src={`../assets/hardware/waterpump_connected.png`}
           alt="Valve"
-          className="w-[220px] h-[220px] object-contain overflow mb-4"
+          className="w-[220px] h-[220px] object-contain rounded-lg"
         />
       </div>
       <div className="flex items-center justify-between">

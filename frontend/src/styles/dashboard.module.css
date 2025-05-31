@@ -7,7 +7,6 @@
 .mainTitle {
     font-size: 40px;
     color: #134F14;
-    margin-bottom: 0.75rem;
     font-weight: 600;
     letter-spacing: -0.05em;
     line-height: 1.2;
@@ -19,6 +18,7 @@
   letter-spacing: -0.05em;
 }
 
+
 .weatherText {
     font-size: 140px;
     color: #ffffff;
@@ -29,4 +29,46 @@
 
 .disconnectedHardware {
     color: #C42727;
+}
+
+.deviceTitle {
+  font-size: 20px;
+  letter-spacing: -0.05em;
+  color: #A4A4A4;
+}
+
+.deviceStatusOffline {
+  font-size: 16px;
+  color: #C42727;
+  letter-spacing: -0.05em;
+}
+
+.deviceStatusOnline {
+  font-size: 16px;
+  color: #134F14;
+  letter-spacing: -0.05em;
+}
+
+.deviceMessage {
+  font-size: 20px;
+  color: #838383;
+  letter-spacing: -0.05em;
+}
+
+.sensorTitle {
+  font-size: 20px;
+  color: #134F14;
+  letter-spacing: -0.05em;
+}
+
+.sensorSubtitle {
+  font-size: 14px;
+  color: #134F14;
+  letter-spacing: -0.05em;
+}
+
+.sensorStatusOffline {
+  font-size: 14px;
+  color: #ffffff;
+  letter-spacing: -0.05em;
 }

@@ -53,12 +53,11 @@ export interface PlotDetails {
   irrigation_logs: IrrigationLog[];
 }
 
-// Adjusted AiSummary interface according to new backend response
 export interface AiSummary {
   headline: string;
-  short_summary: string;
-  language_type: string;  // new field to track language of summary
+  summary: string;
 }
+
 
 export interface PlotDetailsCardProps {
   cropName: string;
@@ -95,6 +94,13 @@ interface SensorCountByCategory {
   [category: string]: number;
 }
 
+interface SensorInfo {
+  plot_id: string;
+  sensor_id: string;
+  sensor_name: string;
+  sensor_category: string;
+}
+
 interface GlobalIrrigationLog {
   plot_id: string;
   plot_name: string;
@@ -109,7 +115,7 @@ interface PlotState {
   selectedPlotDetails: PlotDetails | null;
 
   aiSummary: AiSummary | null;
-  getAiSummary: (plotId: string) => Promise<void>;
+  getAiSummary: (userId: string) => Promise<void>;
 
   sensorCountsByPlot: Record<string, SensorCountByCategory>;
   getSensorCount: (plotId: string) => Promise<void>;
@@ -125,6 +131,9 @@ interface PlotState {
 
   globalIrrigationLogs: GlobalIrrigationLog[];
   getGlobalIrrigationLogs: (userId: string) => Promise<void>;
+
+  userSensorsByPlot: Record<string, SensorInfo[]>;
+  getUserSensors: (userId: string) => Promise<void>;
 
   getUserPlot: (userId: string) => Promise<void>;
   getFullPlotDetails: (plotId: string) => Promise<void>;
@@ -190,10 +199,18 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   setAreaInSqMeters: (area) => set({ areaInSqMeters: area }),
 
   getUserPlot: async (userId: string) => {
-    const data = await getPlotList(userId);
-    console.log("Fetched plots:", data);
-    set({ plots: data.plots });
+  const data = await getPlotList(userId);
+  console.log("Fetched plots:", data);
+
+  const plots = data.plots || [];
+  set({ plots });
+
+  // Fetch all sensor counts in parallel
+    await Promise.all(
+      plots.map((plot) => plot.plot_id && get().getSensorCount(plot.plot_id))
+    );
   },
+
 
   getFullPlotDetails: async (plotId: string) => {
     const plotDetails = await getPlotDetails(plotId);
@@ -222,18 +239,20 @@ export const usePlotStore = create<PlotState>((set, get) => ({
     set({ selectedPlotId: plotId });
   },
 
-  getAiSummary: async (plotId: string) => {
+  getAiSummary: async (userId: string) => {
     try {
+      console.log("Fetching AI summary for user:", userId);
       const res = await axiosInstance.get("/plots/ai-summary", {
-        params: { plot_id: plotId },
+        params: { user_id: userId },
       });
-      // Expecting { headline, short_summary, language_type }
       set({ aiSummary: res.data });
     } catch (error) {
       console.error("Failed to fetch AI summary:", error);
       set({ aiSummary: null });
     }
   },
+  
+
 
   getSensorCount: async (plotId: string) => {
     try {
@@ -297,14 +316,67 @@ export const usePlotStore = create<PlotState>((set, get) => ({
 
   globalIrrigationLogs: [],
   getGlobalIrrigationLogs: async (userId: string) => {
-    try {
-      const res = await axiosInstance.get("/plots/irrigation-history", {
-        params: { user_id: userId },
-      });
-      set({ globalIrrigationLogs: res.data.logs });
-    } catch (err) {
-      console.error("Failed to fetch global irrigation logs", err);
-      set({ globalIrrigationLogs: [] });
+  try {
+    const plots = get().plots;
+
+    // If plots are not yet fetched, fetch them first
+    let plotIds: string[] = [];
+
+    if (!plots) {
+      const data = await getPlotList(userId);
+      const fetchedPlots = data.plots || [];
+      set({ plots: fetchedPlots });
+      plotIds = fetchedPlots.map((plot) => plot.plot_id);
+    } else {
+      plotIds = plots.map((plot) => plot.plot_id);
     }
-  },
+
+    // Fetch all logs (backend filters by user_id and includes plot info)
+    const res = await axiosInstance.get("/plots/irrigation-history", {
+      params: { user_id: userId },
+    });
+
+    const allLogs = res.data.logs || [];
+
+    // Filter logs that belong to the user's plot_ids
+    const userLogs = allLogs
+      .filter((log: any) => plotIds.includes(log.plot_id))
+      .sort((a: any, b: any) =>
+        new Date(b.time_started).getTime() - new Date(a.time_started).getTime()
+      );
+
+    set({ globalIrrigationLogs: userLogs });
+  } catch (err) {
+    console.error("Failed to fetch global irrigation logs", err);
+    set({ globalIrrigationLogs: [] });
+  }
+},
+
+userSensorsByPlot: {},
+
+getUserSensors: async (userId: string) => {
+  try {
+    const res = await axiosInstance.get("/plots/get-user-sensors", {
+      params: { user_id: userId },
+    });
+
+    const sensors: SensorInfo[] = res.data.sensors || [];
+
+    // Group by plot_id
+    const grouped: Record<string, SensorInfo[]> = {};
+    sensors.forEach((sensor) => {
+      if (!grouped[sensor.plot_id]) {
+        grouped[sensor.plot_id] = [];
+      }
+      grouped[sensor.plot_id].push(sensor);
+    });
+
+    set({ userSensorsByPlot: grouped });
+  } catch (error) {
+    console.error("Failed to fetch user sensors", error);
+    set({ userSensorsByPlot: {} });
+  }
+},
+
+
 }));

@@ -1,14 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import ReactApexChart from 'react-apexcharts';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import dayjs from 'dayjs';
 import { usePlotStore } from '../store/usePlotStore';
 import AILatestInsights from '../components/AILatestInsights';
 import AIWarnings from '../components/AIWarnings';
 import WebDetailedChart from '../components/charts/WebDetailedChart';
+import WebSmallChart from '../components/charts/WebSmallChart';
+
+const TIME_RANGES = {
+  '1D': 1,
+  '1W': 7,
+  '1M': 30,
+  '3M': 90,
+};
 
 const Dashboard = () => {
   const [showTrends, setShowTrends] = useState(true);
   const [showWarnings, setShowWarnings] = useState(true);
+  const [selectedRange, setSelectedRange] = useState<'1D' | '1W' | '1M' | '3M'>('1D');
+  const [selectedDate, setSelectedDate] = useState(dayjs().format('YYYY-MM-DD'));
 
   const {
     selectedPlotId,
@@ -24,7 +34,7 @@ const Dashboard = () => {
   useEffect(() => {
     if (selectedPlotId) {
       getAiHistory(selectedPlotId);
-      getFullPlotDetails(selectedPlotId); // ✅ Ensures full data is loaded
+      getFullPlotDetails(selectedPlotId);
     }
   }, [selectedPlotId]);
 
@@ -37,6 +47,9 @@ const Dashboard = () => {
       ? current
       : latest;
   }, englishEntries?.[0]);
+
+  const days = TIME_RANGES[selectedRange];
+  const currentStartDate = dayjs(selectedDate);
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen font-sans">
@@ -75,32 +88,72 @@ const Dashboard = () => {
           }`}
         >
           {selectedPlotDetails && (
-            <div className="grid md:grid-cols-2 gap-4">
-              <WebDetailedChart
-                title="Moisture Levels"
-                readings={selectedPlotDetails.moisture_readings}
-                dataKey="soil_moisture"
-                unit="%"
-              />
-              <WebDetailedChart
-                title="Nitrogen Levels"
-                readings={selectedPlotDetails.nutrient_readings}
-                dataKey="readed_nitrogen"
-                unit="mg/l"
-              />
-              <WebDetailedChart
-                title="Phosphorus Levels"
-                readings={selectedPlotDetails.nutrient_readings}
-                dataKey="readed_phosphorus"
-                unit="mg/l"
-              />
-              <WebDetailedChart
-                title="Potassium Levels"
-                readings={selectedPlotDetails.nutrient_readings}
-                dataKey="readed_potassium"
-                unit="mg/l"
-              />
-            </div>
+            <>
+              <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
+                <div className="flex space-x-2 text-sm">
+                  {Object.keys(TIME_RANGES).map((range) => (
+                    <button
+                      key={range}
+                      onClick={() => setSelectedRange(range as keyof typeof TIME_RANGES)}
+                      className={`px-2 py-1 rounded ${
+                        selectedRange === range
+                          ? 'bg-green-900 text-white'
+                          : 'bg-gray-200 text-gray-700'
+                      }`}
+                    >
+                      {range}
+                    </button>
+                  ))}
+                </div>
+                <div className="text-sm flex items-center gap-2">
+                  <label htmlFor="start-date" className="text-gray-700">
+                    Start Date:
+                  </label>
+                  <input
+                    id="start-date"
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="px-2 py-1 border border-gray-300 rounded"
+                  />
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <WebDetailedChart
+                  title="Moisture Levels"
+                  readings={selectedPlotDetails.moisture_readings}
+                  dataKey="soil_moisture"
+                  unit="%"
+                  selectedRange={selectedRange}
+                  currentStartDate={dayjs(selectedDate)}
+                />
+                <WebDetailedChart
+                  title="Nitrogen Levels"
+                  readings={selectedPlotDetails.nutrient_readings}
+                  dataKey="readed_nitrogen"
+                  unit="mg/l"
+                  selectedRange={selectedRange}
+                  currentStartDate={dayjs(selectedDate)}
+                />
+                <WebDetailedChart
+                  title="Phosphorus Levels"
+                  readings={selectedPlotDetails.nutrient_readings}
+                  dataKey="readed_phosphorus"
+                  unit="mg/l"
+                  selectedRange={selectedRange}
+                  currentStartDate={dayjs(selectedDate)}
+                />
+                <WebDetailedChart
+                  title="Potassium Levels"
+                  readings={selectedPlotDetails.nutrient_readings}
+                  dataKey="readed_potassium"
+                  unit="mg/l"
+                  selectedRange={selectedRange}
+                  currentStartDate={dayjs(selectedDate)}
+                />
+              </div>
+            </>
           )}
         </div>
       </div>

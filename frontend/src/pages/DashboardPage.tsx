@@ -14,6 +14,18 @@ import disconnectedHardware from '../assets/hardware/nano_not_connected.png';
 
 export default function DashboardPage() {
   const authUser = useAuthStore((state) => state.authUser);
+  const aiSummary = usePlotStore((state) => state.aiSummary);
+  const getAiSummary = usePlotStore((state) => state.getAiSummary);
+  const getUserPlot = usePlotStore((state) => state.getUserPlot);
+
+  useEffect(() => {
+    if (authUser && typeof authUser.user_id === "string") {
+      getUserPlot(authUser.user_id);
+      getAiSummary(authUser.user_id);
+    }
+  }, [authUser]);
+
+
   
   return (
     <div className="min-h-screen min-w-screen">
@@ -21,15 +33,17 @@ export default function DashboardPage() {
         {/* Row 1 */}
         <div className="flex flex-col md:flex-row w-full md:h-74 h-auto space-y-4 md:space-y-0 md:space-x-4 mb-4">
           <div className="w-full md:w-2/3 bg-white rounded-lg text-left flex flex-col justify-center px-[40px] py-[60px]">
-            <span className={dashboardStyles.subHeading}>Hey, <span className="font-bold">{authUser?.userFname || 'Guest Account'}! 👋</span></span>
+          <h1 className="text-xl text-gray-900 font-semibold">
+            Hey,{" "}<span className="font-bold">{authUser?.userFname || "Guest Account"}</span><span className="inline-block">👋</span>
+          </h1>
             <span className="py-3 md:w-[500px]">
-              <span className={`${dashboardStyles.mainTitle} leading-[0.5rem]`}>
-                Moisture Increasing, Nutrient Levels Fluctuating
+              <span className={dashboardStyles.mainTitle}>
+                {aiSummary?.headline || 'No AI Headline Generated'}
               </span>
             </span>
             <span className="py-3 md:w-[500px]">
               <span className={dashboardStyles.subTitle}>
-              No AI Analysis has been generated.
+                {aiSummary?.summary || 'No AI Summary Available'}
               </span>
             </span>
           </div>

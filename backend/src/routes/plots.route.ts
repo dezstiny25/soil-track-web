@@ -138,32 +138,42 @@ router.get("/analytics", async (req, res) => {
 });
 
 router.get("/ai-summary", async (req, res) => {
-  const plot_id = req.query.plot_id as string;
-  if (!plot_id) res.status(400).json({ error: "Missing plot_id" });
+  const user_id = req.query.user_id as string;
 
-  try {
-    const { data, error } = await supabase
-      .from("ai_analysis")
-      .select("*, language_type") // added language_type
-      .eq("plot_id", plot_id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .single();
+  if (!user_id) {
+    res.status(400).json({ error: "Missing user_id" });
+  } else {
+    try {
+      const { data, error } = await supabase
+        .from("ai_summary")
+        .select("*")
+        .eq("user_id", user_id)
+        .order("analysis_date", { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-    if (error || !data) throw error;
+      if (error || !data) {
+        console.error("Supabase error or no data:", error);
+        res.status(404).json({ error: "AI summary not found" });
+      } else {
+        const analysis = data.summary_analysis;
+        const parsed = typeof analysis === "string" ? JSON.parse(analysis) : analysis;
 
-    const analysis = data.analysis;
-    const parsed = typeof analysis === "string" ? JSON.parse(analysis) : analysis;
-    const summary = parsed.AI_Analysis;
+        const summary = parsed?.summary || parsed?.AI_Analysis?.summary;
 
-    res.json({
-      headline: summary.headline,
-      short_summary: summary.short_summary,
-      language_type: data.language_type || parsed.AI_Analysis.language_type || "unknown",
-    });
-  } catch (error) {
-    console.error("Failed to fetch or parse AI analysis:", error);
-    res.status(500).json({ error: "Failed to fetch AI summary" });
+        if (!summary) {
+          res.status(500).json({ error: "Invalid summary structure" });
+        } else {
+          res.json({
+            headline: parsed.headline,
+            summary: summary,
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch or parse AI summary:", error);
+      res.status(500).json({ error: "Failed to fetch AI summary" });
+    }
   }
 });
 
@@ -292,5 +302,68 @@ router.get("/irrigation-history", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch irrigation history" });
   }
 });
+// NEW ROUTE: Get all sensors assigned to a user's plots (no `return`)
+router.get("/get-user-sensors", async (req: Request, res: Response) => {
+  const user_id = req.query.user_id as string;
+
+  if (!user_id) {
+    res.status(400).json({ error: "Missing user_id" });
+  } else {
+    try {
+      // Step 1: Get user's plots
+      const { data: plots, error: plotError } = await supabase
+        .from("user_plots")
+        .select("plot_id")
+        .eq("user_id", user_id);
+
+      if (plotError) {
+        console.error("Failed to fetch plots:", plotError.message);
+        res.status(500).json({ error: "Failed to fetch plots" });
+      } else {
+        const safePlots = plots ?? [];
+
+        if (safePlots.length === 0) {
+          res.json({ sensors: [] });
+        } else {
+          const plotIds = safePlots.map((plot) => plot.plot_id);
+
+          // Step 2: Fetch sensors for those plots
+          const { data: sensors, error: sensorError } = await supabase
+            .from("user_plot_sensors")
+            .select(`
+              plot_id,
+              sensor_id,
+              soil_sensors (
+                sensor_name,
+                sensor_category
+              )
+            `)
+            .in("plot_id", plotIds);
+
+          if (sensorError) {
+            console.error("Failed to fetch sensors:", sensorError.message);
+            res.status(500).json({ error: "Failed to fetch sensors" });
+          } else {
+            const safeSensors = sensors ?? [];
+
+            const formatted = safeSensors.map((item: any) => ({
+              plot_id: item.plot_id,
+              sensor_id: item.sensor_id,
+              sensor_name: item.soil_sensors?.sensor_name ?? "Unnamed Sensor",
+              sensor_category: item.soil_sensors?.sensor_category ?? "Unknown",
+            }));
+
+            res.json({ sensors: formatted });
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Unexpected error fetching sensors:", error);
+      res.status(500).json({ error: "Unexpected error fetching sensors" });
+    }
+  }
+});
+
+
 
 export default router;

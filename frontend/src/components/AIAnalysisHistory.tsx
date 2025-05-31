@@ -44,7 +44,7 @@ const AIAnalysisHistory: React.FC = () => {
     <div className="mt-6 bg-white p-10 rounded-xl shadow-sm border space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-green-800">
-          English Findings History:
+          Analysis List History:
         </h2>
 
         {/* Filter Buttons */}
