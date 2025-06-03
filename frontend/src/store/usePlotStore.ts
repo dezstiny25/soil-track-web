@@ -95,7 +95,14 @@ interface SensorCountByCategory {
 }
 
 interface SensorInfo {
+  sensor_id: string;
   plot_id: string;
+  sensor_name: string;
+  sensor_category: string;
+}
+
+
+interface SensorDetail {
   sensor_id: string;
   sensor_name: string;
   sensor_category: string;
@@ -121,6 +128,9 @@ interface PlotState {
   getSensorCount: (plotId: string) => Promise<void>;
   sensorCountByCategory: () => SensorCountByCategory;
 
+  userSensorsByPlot: Record<string, SensorInfo[]>;
+  getUserSensors: (userId: string) => Promise<void>;
+
   aiHistory: AIHistoryEntry[] | null;
   getAiHistory: (plotId: string) => Promise<void>;
 
@@ -132,8 +142,9 @@ interface PlotState {
   globalIrrigationLogs: GlobalIrrigationLog[];
   getGlobalIrrigationLogs: (userId: string) => Promise<void>;
 
-  userSensorsByPlot: Record<string, SensorInfo[]>;
-  getUserSensors: (userId: string) => Promise<void>;
+  sensorDetailsByPlot: Record<string, SensorDetail[]>;
+  getSensorDetails: (plotId: string) => Promise<void>;
+  sensorDetails: () => SensorDetail[];
 
   getUserPlot: (userId: string) => Promise<void>;
   getFullPlotDetails: (plotId: string) => Promise<void>;
@@ -359,19 +370,17 @@ getUserSensors: async (userId: string) => {
     const res = await axiosInstance.get("/plots/get-user-sensors", {
       params: { user_id: userId },
     });
-
     const sensors: SensorInfo[] = res.data.sensors || [];
 
     // Group by plot_id
-    const grouped: Record<string, SensorInfo[]> = {};
-    sensors.forEach((sensor) => {
-      if (!grouped[sensor.plot_id]) {
-        grouped[sensor.plot_id] = [];
-      }
-      grouped[sensor.plot_id].push(sensor);
-    });
+    const groupedByPlot: Record<string, SensorInfo[]> = {};
+    for (const sensor of sensors) {
+      const plotId = sensor.plot_id;
+      if (!groupedByPlot[plotId]) groupedByPlot[plotId] = [];
+      groupedByPlot[plotId].push(sensor);
+    }
 
-    set({ userSensorsByPlot: grouped });
+    set({ userSensorsByPlot: groupedByPlot });
   } catch (error) {
     console.error("Failed to fetch user sensors", error);
     set({ userSensorsByPlot: {} });
@@ -379,4 +388,34 @@ getUserSensors: async (userId: string) => {
 },
 
 
+  sensorDetailsByPlot: {},
+
+  getSensorDetails: async (plotId: string) => {
+    try {
+      const res = await axiosInstance.get("/plots/sensor-details", {
+        params: { plot_id: plotId },
+      });
+      const details: SensorDetail[] = res.data.sensorDetails || [];
+      set((state) => ({
+        sensorDetailsByPlot: {
+          ...state.sensorDetailsByPlot,
+          [plotId]: details,
+        },
+      }));
+    } catch (error) {
+      console.error("Failed to fetch sensor details", error);
+      set((state) => ({
+        sensorDetailsByPlot: {
+          ...state.sensorDetailsByPlot,
+          [plotId]: [],
+        },
+      }));
+    }
+  },
+
+  sensorDetails: () => {
+    const plotId = get().selectedPlotId;
+    if (!plotId) return [];
+    return get().sensorDetailsByPlot[plotId] || [];
+  },
 }));

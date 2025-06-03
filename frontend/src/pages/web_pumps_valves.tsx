@@ -5,12 +5,31 @@
 
 import '../index.css';
 import dashboardStyles from '../styles/dashboard.module.css';
+import { useEffect, useMemo } from 'react';
+import { useAuthStore } from '../store/useAuthStore';
+import { usePlotStore } from '../store/usePlotStore';
+import SensorDetailsList from '../components/SensorDetailsList';
 
 // Components
 import MainDevice from '../components/MainDevice';
 import MainSensors from '../components/MainSensors';
 
 export default function WebPumpValves() {
+   const authUser = useAuthStore((state) => state.authUser);
+  const getUserSensors = usePlotStore((state) => state.getUserSensors);
+  const userSensorsByPlot = usePlotStore((state) => state.userSensorsByPlot);
+  const plotId = usePlotStore((state) => state.selectedPlotId);
+ 
+  useEffect(() => {
+    if (plotId) {
+      getUserSensors(plotId);
+    }
+  }, [authUser?.user_id, getUserSensors]);
+
+  const allSensors = useMemo(() => {
+    return Object.values(userSensorsByPlot).flat();
+  }, [userSensorsByPlot]);
+
     return (
         <div className='flex flex-col items-center justify-center'>
             <div className='flex flex-row md:flex-row w-full h-full md:space-y-0 md:space-x-4 mb-4'>
@@ -41,19 +60,7 @@ export default function WebPumpValves() {
             </div>
 
             <div className='flex flex-row md:flex-row w-full h-full space-y-4 md:space-y-0 md:space-x-4 mb-4'>
-                {/* Gamit ka props nak, check mo main file nakaayos na parameters mo mwa mwaa */}
-                
-                {/* Device 1 */}
-                <MainSensors />
-
-                {/* Device 2 */}
-                <MainSensors />
-
-                {/* Device 3 */}
-                <MainSensors />
-
-                {/* Device 4 */}
-                <MainSensors />
+                <SensorDetailsList sensors={allSensors} />
             </div>
 
         </div>
