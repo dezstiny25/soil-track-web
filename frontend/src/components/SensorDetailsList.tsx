@@ -1,6 +1,6 @@
 import dashboardStyles from '../styles/dashboard.module.css';
 import React from 'react';
-import nanoImage from '../assets/hardware/nano_not_connected.png'; // Default image
+import nanoImage from '../assets/hardware/nano_not_connected.png'; // Default fallback
 import npkImage from '../assets/hardware/npk_model.png';
 import moistureImage from '../assets/hardware/moisture_model.png';
 
@@ -37,7 +37,7 @@ const SensorDetailsList: React.FC<SensorDetailsListProps> = ({
   return (
     <>
       {sensors.map((sensor) => {
-        let sensorImage = nanoImage;
+        let sensorImage = nanoImage; // Default
         if (sensor.sensor_category === 'NPK Sensor') {
           sensorImage = npkImage;
         } else if (sensor.sensor_category === 'Moisture Sensor') {
@@ -45,10 +45,7 @@ const SensorDetailsList: React.FC<SensorDetailsListProps> = ({
         }
 
         return (
-          <div
-            key={sensor.sensor_id}
-            className={`bg-white rounded-lg w-full ${boxSize} p-5 flex flex-col items-center justify-center gap-2`}
-          >
+          <div key={sensor.sensor_id} className={`bg-white rounded-lg w-full ${boxSize} p-5 flex flex-col items-center justify-center gap-2`}>
             <div className="mt-2 flex flex-col items-center justify-center w-full bg-[#F7F7F7] rounded-lg py-6">
               <img
                 src={imageSrc || sensorImage}

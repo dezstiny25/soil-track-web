@@ -9,17 +9,16 @@ import { useEffect, useMemo } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { usePlotStore } from '../store/usePlotStore';
 
+
 export default function WebController() {
   const authUser = useAuthStore((state) => state.authUser);
   const getUserSensors = usePlotStore((state) => state.getUserSensors);
   const userSensorsByPlot = usePlotStore((state) => state.userSensorsByPlot);
-  const plotId = usePlotStore((state) => state.selectedPlotId);
-  
 
 
-  useEffect(() => {
-    if (plotId) {
-      getUserSensors(plotId);
+   useEffect(() => {
+    if (authUser?.user_id) {
+      getUserSensors(authUser.user_id);
     }
   }, [authUser?.user_id, getUserSensors]);
 
@@ -27,7 +26,6 @@ export default function WebController() {
     return Object.values(userSensorsByPlot).flat();
   }, [userSensorsByPlot]);
 
-  console.log("All Sensors:", allSensors);
 
   return (
     <div className="flex flex-col items-center justify-center px-4">
