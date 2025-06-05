@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { usePlotStore } from "../store/usePlotStore";
 import { ArrowUpRight, ArrowRight } from "lucide-react";
+import styles from "../styles/plotCard.module.css";
 
 const DEFAULT_ITEMS = 5;
 const EXPANDED_ITEMS = 10;
@@ -39,8 +40,8 @@ export default function GlobalIrrigationHistory({ userId }: { userId: string }) 
   };
 
   return (
-    <div className="mt-6 bg-white p-10 rounded-xl shadow-sm border space-y-4">
-      <h2 className="text-lg font-semibold text-green-800">Irrigation Log History</h2>
+    <div className="mt-6 bg-white px-5 py-2 space-y-4">
+      <h2 className={styles.medText}>Recent Irrigation Log</h2>
 
       {/* Table Header */}
       <div className="grid grid-cols-12 px-4 py-2 text-sm font-medium text-gray-500 bg-gray-100 rounded">
@@ -83,7 +84,7 @@ export default function GlobalIrrigationHistory({ userId }: { userId: string }) 
       {!showMore && totalLogs > DEFAULT_ITEMS && (
         <div
           onClick={handleSeeMore}
-          className="text-sm text-center text-green-800 mt-2 hover:underline cursor-pointer flex items-center justify-center gap-1"
+          className="text-sm text-center text-gray-800 mt-2 hover:underline cursor-pointer flex items-center justify-center gap-1"
         >
           See more <ArrowRight size={14} />
         </div>
@@ -95,39 +96,38 @@ export default function GlobalIrrigationHistory({ userId }: { userId: string }) 
           <button
             onClick={() => handlePageChange(page - 1)}
             disabled={page === 1}
-            className={`px-3 py-1 rounded-full text-sm ${
+            className={`px-3 py-1 rounded-tl-lg rounded-bl-lg text-sm text-gray-800 ${
               page === 1
                 ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-                : "bg-green-900 text-white hover:bg-green-800"
+                : `${styles.green} text-white hover:bg-green-800`
             }`}
           >
             Prev
           </button>
-
-          {[...Array(totalPages)].map((_, idx) => {
-            const pageNumber = idx + 1;
-            return (
-              <button
-                key={pageNumber}
-                onClick={() => handlePageChange(pageNumber)}
-                className={`px-3 py-1 rounded-full text-sm ${
-                  page === pageNumber
-                    ? "bg-green-900 text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-              >
-                {pageNumber}
-              </button>
-            );
-          })}
+            {[...Array(totalPages)].map((_, idx) => {
+              const pageNumber = idx + 1;
+              return (
+                  <button
+                    key={pageNumber}
+                    onClick={() => handlePageChange(pageNumber)}
+                    className={`px-3 py-1 rounded-lg text-sm ${
+                      page === pageNumber
+                        ? `${styles.green} text-white`
+                        : ""
+                    }`}
+                  >
+                    {pageNumber}
+                  </button>
+              );
+            })}
 
           <button
             onClick={() => handlePageChange(page + 1)}
             disabled={page === totalPages}
-            className={`px-3 py-1 rounded-full text-sm ${
+            className={`px-3 py-1 rounded-tr-lg rounded-br-lg text-sm ${
               page === totalPages
                 ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-                : "bg-green-900 text-white hover:bg-green-800"
+                : `${styles.green} text-white`
             }`}
           >
             Next

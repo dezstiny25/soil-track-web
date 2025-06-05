@@ -1,5 +1,8 @@
 import React, { useEffect } from "react";
 import { usePlotStore } from "../store/usePlotStore";
+import "../index.css";
+import styles from "../styles/plotCard.module.css";
+
 
 export function AIWarnings() {
   const selectedPlotId = usePlotStore((state) => state.selectedPlotId);
@@ -27,7 +30,7 @@ export function AIWarnings() {
   );
 
   if (englishEntries.length === 0) {
-    return <p>No English AI warnings available for this plot.</p>;
+    return <p>No AI warnings available for this plot.</p>;
   }
 
   const latestEntry = englishEntries.reduce((latest, current) => {
@@ -41,16 +44,16 @@ export function AIWarnings() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {/* Drought Risks */}
-      <div className="rounded-xl bg-white p-9 shadow">
-        <h4 className="text-[26px] font-bold text-red-700 mb-2">⚠ Drought Risks</h4>
+      <div className={`${styles.card} border`}>
+        <h4 className="text-[26px] font-bold mb-2">Drought Risks</h4>
         <p className="text-gray-800 text-m">
           {drought_risks || "No drought risks identified in the latest analysis."}
         </p>
       </div>
 
       {/* Nutrient Imbalance */}
-      <div className="rounded-xl bg-white p-9 shadow">
-        <h4 className="text-[26px] font-bold text-red-700 mb-2">⚠ Nutrient Imbalances</h4>
+      <div className={`${styles.card} border`}>
+        <h4 className="text-[26px] font-bold mb-2">Nutrient Imbalances</h4>
         <p className="text-gray-800 text-m">
           {nutrient_imbalances || "No nutrient imbalances detected in the latest analysis."}
         </p>

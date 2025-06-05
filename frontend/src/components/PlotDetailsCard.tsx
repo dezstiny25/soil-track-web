@@ -5,6 +5,7 @@ import {
   convertSqMetersToAcres,
   convertSqMetersToSqFeet,
 } from "../utils/calculateArea";
+import styles from "../styles/plotCard.module.css"
 
 const PlotDetailsCard: React.FC = () => {
   const plotId = usePlotStore((state) => state.selectedPlotId);
@@ -40,7 +41,7 @@ const sensorCountByCategory = getSensorCountByCategory();
 
   return (
     <div>
-      <div className="flex justify-between items-center text-sm font-medium text-gray-900 mb-4 bg-gray-100 p-3 rounded-lg">
+      <div className="flex justify-between items-center text-sm font-medium text-gray-900 mb-4 bg-gray-100 py-3 px-5 rounded-tl-lg rounded-tr-lg">
         <span>Plot Details:</span>
         {formattedSqMeters ? (
           <div className="text-right text-gray-500 text-sm">
@@ -52,32 +53,32 @@ const sensorCountByCategory = getSensorCountByCategory();
       </div>
 
       <div className="grid grid-cols-2 gap-3 text-sm">
-        <div className="border rounded-lg p-3 bg-gray-50 relative">
-          <div className="text-gray-500">Crop Planted:</div>
-          <div className="text-green-700 font-bold text-lg">{crop}</div>
+        <div className="border rounded-lg p-5 bg-gray-50 relative">
+          <div className={styles.gsText}>Crop Planted:</div>
+          <div className={styles.smallText}>{crop}</div>
           <button className="absolute top-2 right-2 text-gray-600 hover:text-black">
             <Pencil size={16} />
           </button>
         </div>
 
-        <div className="border rounded-lg p-3 bg-gray-50 relative">
-          <div className="text-gray-500">Soil Type:</div>
-          <div className="text-green-700 font-bold text-lg">{soil}</div>
+        <div className="border rounded-lg p-5 bg-gray-50 relative">
+          <div className={styles.gsText}>Soil Type:</div>
+          <div className={styles.smallText}>{soil}</div>
           <button className="absolute top-2 right-2 text-gray-600 hover:text-black">
             <Pencil size={16} />
           </button>
         </div>
 
-        <div className="border rounded-lg p-3 bg-gray-50">
-          <div className="text-gray-500">Moisture Sensors:</div>
-          <div className="text-green-700 font-bold text-lg">
+        <div className="border rounded-lg p-5 bg-gray-50">
+          <div className={styles.gsText}>Moisture Sensors:</div>
+          <div className={styles.smallText}>
             {moistureCount} sensor{moistureCount !== 1 ? "s" : ""}
           </div>
         </div>
 
-        <div className="border rounded-lg p-3 bg-gray-50">
-          <div className="text-gray-500">NPK Sensors:</div>
-          <div className="text-green-700 font-bold text-lg">
+        <div className="border rounded-lg p-5 bg-gray-50">
+          <div className={styles.gsText}>NPK Sensors:</div>
+          <div className={styles.smallText}>
             {npkCount} sensor{npkCount !== 1 ? "s" : ""}
           </div>
         </div>

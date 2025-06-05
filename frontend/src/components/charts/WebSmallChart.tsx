@@ -12,7 +12,7 @@ interface Reading {
   [key: string]: any;
 }
 
-interface WebDetailedChartProps {
+interface WebSmallChartProps {
   readings: Reading[];
   dataKey: string;
   title: string;
@@ -20,6 +20,7 @@ interface WebDetailedChartProps {
   selectedRange: '1D' | '1W' | '1M' | '3M' | 'custom';
   currentStartDate: Dayjs;
   currentEndDate?: Dayjs;
+  isMini? : boolean;
 }
 
 const TIME_RANGES: Record<'1D' | '1W' | '1M' | '3M', number> = {
@@ -36,14 +37,15 @@ const COLOR_MAP: Record<string, string> = {
   potassium: '#E91E63',
 };
 
-const WebDetailedChart: React.FC<WebDetailedChartProps> = ({
+const WebSmallChart: React.FC<WebSmallChartProps> = ({
   readings,
   dataKey,
   title,
-  unit = '',
+  unit = 'mg/L',
   selectedRange,
   currentStartDate,
   currentEndDate,
+  isMini = false,
 }) => {
   const [windowStart, windowEnd] = useMemo(() => {
     if (selectedRange === 'custom' && currentEndDate) {
@@ -80,6 +82,7 @@ const WebDetailedChart: React.FC<WebDetailedChartProps> = ({
       type: 'area',
       toolbar: { show: false },
       zoom: { enabled: false },
+      sparkline: { enabled: isMini }, // enables tiny chart mode
     },
     colors: [color],
     dataLabels: { enabled: false },
@@ -96,45 +99,40 @@ const WebDetailedChart: React.FC<WebDetailedChartProps> = ({
     xaxis: {
       type: 'datetime',
       categories,
-      labels: {
-        style: { colors: '#666', fontSize: '12px' },
-      },
+      labels: { show: !isMini },
+      axisBorder: { show: !isMini },
+      axisTicks: { show: !isMini },
     },
     yaxis: {
-      labels: {
-        style: { colors: '#666', fontSize: '12px' },
-      },
+      labels: { show: !isMini },
     },
     tooltip: {
+      enabled: true,
       x: { format: 'dd MMM yyyy h:mm A' },
       y: {
-        formatter: (val: number) => `${val}${unit}`,
+        formatter: (val: number) => `${val} mg/L`,
       },
     },
     legend: { show: false },
+    grid: { show: !isMini },
   };
 
   const series = [
     {
-      name: title,
+      name: '',
       data: dataValues,
     },
   ];
 
   return (
-    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 w-full">
-      <h3 className="text-md font-semibold text-gray-700 mb-2">{title}</h3>
-      <div className="w-full h-[20px]">
-        <ReactApexChart
-          options={options}
-          series={series}
-          type="area"
-          height="100%"
-          width="100%"
-        />
-      </div>
-    </div>
+    <ReactApexChart
+      options={options}
+      series={series}
+      type="area"
+      height={isMini ? 50 : 200}
+      width="100%"
+    />
   );
 };
 
-export default WebDetailedChart;
+export default WebSmallChart;

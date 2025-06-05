@@ -142,41 +142,41 @@ router.get("/ai-summary", async (req, res) => {
 
   if (!user_id) {
     res.status(400).json({ error: "Missing user_id" });
-  } else {
-    try {
-      const { data, error } = await supabase
-        .from("ai_summary")
-        .select("*")
-        .eq("user_id", user_id)
-        .order("analysis_date", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+  }
 
-      if (error || !data) {
-        console.error("Supabase error or no data:", error);
-        res.status(404).json({ error: "AI summary not found" });
-      } else {
-        const analysis = data.summary_analysis;
-        const parsed = typeof analysis === "string" ? JSON.parse(analysis) : analysis;
+  try {
+    const { data, error } = await supabase
+      .from("ai_summary")
+      .select("*")
+      .eq("user_id", user_id)
+      .order("analysis_date", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-        const summary = parsed?.summary || parsed?.AI_Analysis?.summary;
-
-        if (!summary) {
-          res.status(500).json({ error: "Invalid summary structure" });
-        } else {
-          res.json({
-            headline: parsed.headline,
-            summary: summary,
-          });
-        }
-      }
-    } catch (error) {
-      console.error("Failed to fetch or parse AI summary:", error);
-      res.status(500).json({ error: "Failed to fetch AI summary" });
+    if (error || !data) {
+      console.error("Supabase error or no data:", error);
+      res.status(404).json({ error: "AI summary not found" });
     }
+
+    const analysis = data.summary_analysis;
+    const parsed = typeof analysis === "string" ? JSON.parse(analysis) : analysis;
+    const summary = parsed?.summary || parsed?.AI_Analysis?.summary;
+    const headline = parsed?.headline || parsed?.AI_Analysis?.headline;
+
+    if (!summary) {
+      res.status(500).json({ error: "Invalid summary structure" });
+    }
+
+    res.json({
+      headline: headline || "No headline",
+      summary,
+      analysis_date: data.analysis_date, // 👈 Include date here
+    });
+  } catch (error) {
+    console.error("Failed to fetch or parse AI summary:", error);
+    res.status(500).json({ error: "Failed to fetch AI summary" });
   }
 });
-
 
 // Revised ai-history route with language_type included
 router.get("/ai-history", async (req, res) => {

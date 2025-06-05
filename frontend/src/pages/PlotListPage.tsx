@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 import { usePlotStore } from "../store/usePlotStore";
+import "../index.css";
+import styles from "../styles/plotCard.module.css";
 
 const PlotListPage = () => {
   const navigate = useNavigate();
@@ -14,7 +16,6 @@ const PlotListPage = () => {
     sensorCountsByPlot,
   } = usePlotStore();
 
-  // Load user plots and sensor counts
   useEffect(() => {
     if (authUser?.user_id) {
       getUserPlot(authUser.user_id);
@@ -44,28 +45,19 @@ const PlotListPage = () => {
             const hasNpkSensors = (sensorCounts["NPK Sensor"] ?? 0) > 0;
 
             return (
-              <div
-                key={plot.plot_id}
-                className="bg-white rounded-xl shadow p-6 transition hover:shadow-lg space-y-3"
-              >
-                {/* Row 1: Plot Name label */}
-                <p className="text-sm text-gray-500">Plot Name:</p>
+              <div key={plot.plot_id} className={styles.card}>
+                <p className={styles.cardLabel}>Plot Name:</p>
 
-                {/* Row 2: Plot Name + Crop + Button (2-column layout) */}
-                <div className="grid grid-cols-2 gap-4 items-center">
-                  {/* Left Column: Plot Name */}
-                  <h2 className="text-2xl font-semibold text-green-900">
-                    {plot.plot_name}
-                  </h2>
+                <div className={styles.headerRow}>
+                  <h2 className={styles.cardTitle}>{plot.plot_name}</h2>
 
-                  {/* Right Column: Crop + Button */}
-                  <div className="flex justify-end items-center gap-2">
-                    <span className="bg-green-900 text-white px-4 py-1 rounded-full text-sm">
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span className={styles.cropBadge}>
                       {plot.user_crops?.crop_name || "Unknown Crop"}
                     </span>
                     <button
                       onClick={() => goToPlotPage(plot.plot_id)}
-                      className="bg-green-900 text-white w-7 h-7 rounded-full flex items-center justify-center"
+                      className={styles.arrowButton}
                       aria-label={`Go to details for ${plot.plot_name}`}
                     >
                       <ChevronRight size={20} />
@@ -73,26 +65,14 @@ const PlotListPage = () => {
                   </div>
                 </div>
 
-                {/* Row 3: Soil Moisture */}
-                <p className="text-sm text-gray-600 bg-gray-100 font-bold p-2 rounded">
-                  Soil Moisture Sensors {" "}
-                  <span className={hasSoilMoistureSensors ? "text-gray-600" : "text-red-500"}>
-                    {hasSoilMoistureSensors ? "Assigned" : "None"}
-                  </span>
+                <p className={styles.statusBox}>
+                  Moisture Sensors {hasSoilMoistureSensors ? "Assigned" : "None"}
+                </p>
+                <p className={styles.statusBox}>
+                  NPK Sensors {hasNpkSensors ? "Assigned" : "None"}
                 </p>
 
-                {/* Row 4: NPK Sensors */}
-                <p className="text-sm text-gray-600 bg-gray-100 font-bold p-2 rounded">
-                  NPK Sensors {" "}
-                  <span className={hasNpkSensors ? "text-gray-600" : "text-red-500"}>
-                    {hasNpkSensors ? "Assigned" : "None"}
-                  </span>
-                </p>
-
-                {/* Row 5: Analysis */}
-                <p className="text-green-900 text-sm font-medium">
-                  Analysis has been generated
-                </p>
+                <p className={styles.analysisText}>Analysis has been generated</p>
               </div>
             );
           })}

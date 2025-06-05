@@ -124,8 +124,8 @@ const WebDetailedChart: React.FC<WebDetailedChartProps> = ({
   ];
 
   return (
-    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-      <h3 className="text-md font-semibold text-gray-700 mb-2">{title}</h3>
+    <div className="p-4 bg-white">
+      <h3 className="px-4 text-md font-semibold text-gray-700 mb-2">{title}</h3>
       <ReactApexChart options={options} series={series} type="area" height={300} />
     </div>
   );

@@ -56,6 +56,7 @@ export interface PlotDetails {
 export interface AiSummary {
   headline: string;
   summary: string;
+  analysis_date: string; // or Date, depending on how you use it
 }
 
 
@@ -251,19 +252,31 @@ export const usePlotStore = create<PlotState>((set, get) => ({
   },
 
   getAiSummary: async (userId: string) => {
-    try {
-      console.log("Fetching AI summary for user:", userId);
-      const res = await axiosInstance.get("/plots/ai-summary", {
-        params: { user_id: userId },
-      });
-      set({ aiSummary: res.data });
-    } catch (error) {
-      console.error("Failed to fetch AI summary:", error);
-      set({ aiSummary: null });
-    }
-  },
-  
+  try {
+    const res = await axiosInstance.get("/plots/ai-summary", {
+      params: { user_id: userId },
+    });
 
+    set({ aiSummary: res.data });
+
+    // Comparison logic
+    const today = new Date();
+    const summaryDate = new Date(res.data.analysis_date);
+
+    const isSameDay =
+      today.getFullYear() === summaryDate.getFullYear() &&
+      today.getMonth() === summaryDate.getMonth() &&
+      today.getDate() === summaryDate.getDate();
+
+    if (!isSameDay) {
+      console.warn("No AI summary generated today");
+    }
+
+  } catch (error) {
+    console.error("Failed to fetch AI summary:", error);
+    set({ aiSummary: null });
+  }
+},
 
   getSensorCount: async (plotId: string) => {
     try {

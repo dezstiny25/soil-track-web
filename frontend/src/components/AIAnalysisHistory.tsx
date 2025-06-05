@@ -1,16 +1,19 @@
 import React, { useEffect, useState } from "react";
 import { usePlotStore } from "../store/usePlotStore";
-import { ArrowRight, ArrowUpRight } from "lucide-react";
+import { ArrowRight, ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
+import styles from "../styles/plotCard.module.css";
 
-const ITEMS_PER_PAGE = 10;
+const INITIAL_ITEMS = 5;
+const MAX_ITEMS = 10;
 
 const AIAnalysisHistory: React.FC = () => {
   const plotId = usePlotStore((state) => state.selectedPlotId);
   const aiHistory = usePlotStore((state) => state.aiHistory);
   const getAiHistory = usePlotStore((state) => state.getAiHistory);
 
-  const [filterType, setFilterType] = useState<"Daily" | "Weekly">("Weekly");
-  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
+  const [filterType, setFilterType] = useState<"Daily" | "Weekly">("Daily");
+  const [expanded, setExpanded] = useState(false);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     if (plotId) {
@@ -18,7 +21,11 @@ const AIAnalysisHistory: React.FC = () => {
     }
   }, [plotId, getAiHistory]);
 
-  // Filtered and sorted entries
+  useEffect(() => {
+    setPage(1);
+    setExpanded(false);
+  }, [filterType]);
+
   const filteredFindings = aiHistory
     ?.filter(
       (entry) =>
@@ -32,45 +39,30 @@ const AIAnalysisHistory: React.FC = () => {
         new Date(a.analysis.AI_Analysis.date).getTime()
     );
 
-  const displayedFindings = filteredFindings?.slice(0, visibleCount);
-
-  const handleSeeMore = () => {
-    setVisibleCount((prev) => prev + ITEMS_PER_PAGE);
-  };
-
-  const hasMore = filteredFindings && visibleCount < filteredFindings.length;
+  const itemsPerPage = expanded ? MAX_ITEMS : INITIAL_ITEMS;
+  const totalPages = Math.ceil((filteredFindings?.length || 0) / itemsPerPage);
+  const startIdx = (page - 1) * itemsPerPage;
+  const displayedFindings = filteredFindings?.slice(startIdx, startIdx + itemsPerPage);
 
   return (
-    <div className="mt-6 bg-white p-10 rounded-xl shadow-sm border space-y-4">
+    <div className="bg-white p-10 space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-green-800">
-          Analysis List History:
-        </h2>
+        <h2 className={styles.medText}>Analysis List History:</h2>
 
         {/* Filter Buttons */}
-        <div className="bg-gray-100 p-1 rounded-full flex items-center">
+        <div className={styles.cropBadge}>
           <button
-            onClick={() => {
-              setFilterType("Daily");
-              setVisibleCount(ITEMS_PER_PAGE);
-            }}
-            className={`px-3 py-1 text-sm rounded-full ${
-              filterType === "Daily"
-                ? "bg-green-900 text-white"
-                : "text-gray-700 hover:bg-gray-200"
+            onClick={() => setFilterType("Daily")}
+            className={`px-3 py-1 text-sm rounded-lg ${
+              filterType === "Daily" ? "bg-white text-gray-700" : "text-white"
             }`}
           >
             Daily
           </button>
           <button
-            onClick={() => {
-              setFilterType("Weekly");
-              setVisibleCount(ITEMS_PER_PAGE);
-            }}
-            className={`px-3 py-1 text-sm rounded-full ${
-              filterType === "Weekly"
-                ? "bg-green-900 text-white"
-                : "text-gray-700 hover:bg-gray-200"
+            onClick={() => setFilterType("Weekly")}
+            className={`px-3 py-1 text-sm rounded-lg ${
+              filterType === "Weekly" ? "bg-white text-gray-700" : "text-white"
             }`}
           >
             Weekly
@@ -90,13 +82,12 @@ const AIAnalysisHistory: React.FC = () => {
           <div className="text-center text-gray-500">Loading...</div>
         ) : displayedFindings?.length === 0 ? (
           <div className="text-center text-gray-500">
-            No {filterType.toLowerCase()} English findings found.
+            No {filterType.toLowerCase()} findings found.
           </div>
         ) : (
           displayedFindings.map((entry, index) => {
             const findings = entry.analysis.AI_Analysis.summary.findings;
             const analysisDate = entry.analysis.AI_Analysis.date;
-
             const formattedDate = analysisDate
               ? new Date(analysisDate).toLocaleDateString("en-US", {
                   month: "long",
@@ -114,9 +105,7 @@ const AIAnalysisHistory: React.FC = () => {
                   {formattedDate}
                   <ArrowUpRight size={14} className="text-gray-400" />
                 </div>
-                <div className="col-span-8 text-sm text-gray-600">
-                  {findings}
-                </div>
+                <div className="col-span-8 text-sm text-gray-600">{findings}</div>
               </div>
             );
           })
@@ -124,12 +113,39 @@ const AIAnalysisHistory: React.FC = () => {
       </div>
 
       {/* See More Button */}
-      {hasMore && (
+      {!expanded && filteredFindings && filteredFindings.length > INITIAL_ITEMS && (
         <div
-          onClick={handleSeeMore}
+          onClick={() => setExpanded(true)}
           className="text-sm text-center text-green-800 mt-2 hover:underline cursor-pointer flex items-center justify-center gap-1"
         >
           See more <ArrowRight size={14} />
+        </div>
+      )}
+
+      {/* Pagination */}
+      {expanded && totalPages > 1 && (
+        <div className="flex justify-center items-center gap-4 mt-4 text-sm text-gray-700">
+          <button
+            onClick={() => setPage((p) => Math.max(p - 1, 1))}
+            disabled={page === 1}
+            className={`flex items-center gap-1 px-3 py-1 rounded border ${
+              page === 1 ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "hover:bg-gray-100"
+            }`}
+          >
+            <ChevronLeft size={16} /> Prev
+          </button>
+          <span>
+            Page {page} of {totalPages}
+          </span>
+          <button
+            onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+            disabled={page === totalPages}
+            className={`flex items-center gap-1 px-3 py-1 rounded border ${
+              page === totalPages ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "hover:bg-gray-100"
+            }`}
+          >
+            Next <ChevronRight size={16} />
+          </button>
         </div>
       )}
     </div>

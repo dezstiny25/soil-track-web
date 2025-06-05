@@ -6,6 +6,8 @@ import AILatestInsights from '../components/AILatestInsights';
 import AIWarnings from '../components/AIWarnings';
 import WebDetailedChart from '../components/charts/WebDetailedChart';
 import WebSmallChart from '../components/charts/WebSmallChart';
+import "../index.css";
+import styles from "../styles/plotCard.module.css";
 
 const TIME_RANGES = {
   '1D': 1,
@@ -52,16 +54,15 @@ const Dashboard = () => {
   const currentStartDate = dayjs(selectedDate);
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen font-sans">
+    <div className="p-6 bg-gray-50 min-h-screen">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-semibold text-green-700">
-          Hey, <span className="font-bold">Here is your plot findings:</span>
+        <h1 className={styles.grayTitle}>
+          Hey, <span className={styles.greenTitle}>Here is your plot findings:</span>
         </h1>
         <div className="text-right">
-          <div className="bg-green-800 text-white px-4 py-2 rounded-full text-sm">
-            Weekly Analysis
+          <div className={styles.pageBadge}>
+            Daily Analysis
           </div>
-          <div className="text-sm text-gray-600">Sun, December 17</div>
         </div>
       </div>
 
@@ -74,8 +75,8 @@ const Dashboard = () => {
           className="flex justify-between items-center cursor-pointer"
           onClick={() => setShowTrends(!showTrends)}
         >
-          <h2 className="text-xl font-semibold text-gray-700">
-            Nutrients <span className="text-green-600">Trends:</span>
+          <h2 className={`${styles.medText} px-4 py-2 mb-1`}>
+            Nutrients Trends:
           </h2>
           <span className="text-gray-600">
             {showTrends ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
@@ -90,15 +91,15 @@ const Dashboard = () => {
           {selectedPlotDetails && (
             <>
               <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
-                <div className="flex space-x-2 text-sm">
-                  {Object.keys(TIME_RANGES).map((range) => (
+                <div className={styles.cropBadge}>
+                  {Object.keys(TIME_RANGES).map(range => (
                     <button
                       key={range}
                       onClick={() => setSelectedRange(range as keyof typeof TIME_RANGES)}
-                      className={`px-2 py-1 rounded ${
+                      className={`px-5 py-1 rounded-lg text-sm ${
                         selectedRange === range
-                          ? 'bg-green-900 text-white'
-                          : 'bg-gray-200 text-gray-700'
+                          ? 'bg-white text-gray-700'
+                          : 'text-white'
                       }`}
                     >
                       {range}
@@ -112,9 +113,11 @@ const Dashboard = () => {
                   <input
                     id="start-date"
                     type="date"
-                    value={selectedDate}
+                    value={selectedDate || ""}
                     onChange={(e) => setSelectedDate(e.target.value)}
-                    className="px-2 py-1 border border-gray-300 rounded"
+                    className={`border px-3 py-2 rounded text-sm w-[140px] ${
+                      !selectedDate ? "text-gray-400" : "text-gray-900"
+                    }`}
                   />
                 </div>
               </div>
@@ -163,7 +166,7 @@ const Dashboard = () => {
           className="flex justify-between items-center cursor-pointer"
           onClick={() => setShowWarnings(!showWarnings)}
         >
-          <h2 className="text-xl font-semibold text-gray-700">
+          <h2 className="p-4 text-xl font-semibold text-gray-700">
             {selectedPlot?.plot_name || 'Selected Plot'}{' '}
             <span className="text-red-600">Warnings:</span>
           </h2>

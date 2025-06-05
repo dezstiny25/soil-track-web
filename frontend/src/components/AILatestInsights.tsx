@@ -1,5 +1,7 @@
 import React, { useEffect } from "react";
 import { usePlotStore } from "../store/usePlotStore";
+import "../index.css";
+import styles from "../styles/plotCard.module.css";
 
 export function AILatestInsights() {
   const selectedPlotId = usePlotStore((state) => state.selectedPlotId);
@@ -42,20 +44,20 @@ export function AILatestInsights() {
     <div className="grid grid-cols-3 gap-6">
       {/* Findings */}
       <div className="rounded-xl col-span-1 bg-white p-9 shadow">
-        <h4 className="text-[26px] font-bold text-green-900 mb-2">Findings</h4>
-        <p className="text-gray-800 text-m">{findings}</p>
+        <h4 className={styles.bigText}>Findings</h4>
+        <p className="mt-2 text-gray-800 text-m text-justify">{findings}</p>
       </div>
 
       {/* Predictions */}
       <div className="rounded-xl col-span-1 bg-white p-9 shadow">
-        <h4 className="text-[26px] font-bold text-green-900 mb-2">Predictions</h4>
-        <p className="text-gray-800 text-m">{predictions}</p>
+        <h4 className={styles.bigText}>Predictions</h4>
+        <p className="mt-2 text-gray-800 text-m text-justify">{predictions}</p>
       </div>
 
       {/* Recommendations */}
       <div className="rounded-xl col-span-1 bg-white p-9 shadow">
-        <h4 className="text-[26px] font-bold text-green-900 mb-2">Recommendations</h4>
-        <p className="text-gray-800 text-m">{recommendations}</p>
+        <h4 className={styles.bigText}>Recommendations</h4>
+        <p className="mt-2 text-gray-800 text-m text-justify">{recommendations}</p>
       </div>
     </div>
   );

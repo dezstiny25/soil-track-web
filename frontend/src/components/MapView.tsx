@@ -68,11 +68,10 @@ export default function MapView({ polygons }: MapViewProps) {
         scrollWheelZoom={false}
         style={mapStyles.mapContainer}
       >
-        <TileLayer  url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-        attribution="Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye"/>
+        <TileLayer  url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"/>
         {leafletPolygon.length > 0 && (
           <>
-            <Polygon pathOptions={{ color: 'blue' }} positions={leafletPolygon} />
+            <Polygon pathOptions={{ color: 'yellow' }} positions={leafletPolygon} />
             <FitBoundsHelper bounds={leafletPolygon} />
           </>
         )}
