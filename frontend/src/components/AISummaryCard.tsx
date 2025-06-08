@@ -4,7 +4,11 @@ import { useAuthStore } from "../store/useAuthStore";
 import dashboardStyles from "../styles/dashboard.module.css";
 import styles from "../styles/plotCard.module.css";
 
-const AISummaryCard: React.FC = () => {
+type AISummaryCardProps = {
+  onAnalysisCheck?: (hasAnalysis: boolean) => void;
+};
+
+const AISummaryCard: React.FC<AISummaryCardProps> = ({ onAnalysisCheck }) => {
   const selectedPlotId = usePlotStore((state) => state.selectedPlotId);
   const aiHistory = usePlotStore((state) => state.aiHistory);
   const getAiHistory = usePlotStore((state) => state.getAiHistory);
@@ -16,17 +20,11 @@ const AISummaryCard: React.FC = () => {
     }
   }, [selectedPlotId, getAiHistory]);
 
-  console.log("AI History:", aiHistory);
-
-  if (!selectedPlotId) {
-    return <p>Please select a plot to see AI summary.</p>;
-  }
-
-  if (!aiHistory) {
+  if (!selectedPlotId || !aiHistory) {
+    onAnalysisCheck?.(false);
     return <p></p>;
   }
 
-  // Filter English entries with complete AI_Analysis content
   const englishEntries = aiHistory.filter(
     (entry) =>
       entry.language_type?.toLowerCase() === "en" &&
@@ -36,16 +34,17 @@ const AISummaryCard: React.FC = () => {
   );
 
   if (englishEntries.length === 0) {
+    onAnalysisCheck?.(false);
     return <p>No Analysis Generated for today.</p>;
   }
 
-  // Sort entries by date (descending) and pick the latest
   const latestEntry = englishEntries.reduce((latest, current) => {
     return new Date(current.analysis.AI_Analysis.date) >
       new Date(latest.analysis.AI_Analysis.date)
       ? current
       : latest;
   });
+
   const isToday = (() => {
     if (!latestEntry?.analysis?.AI_Analysis?.date) return false;
     const today = new Date();
@@ -57,14 +56,18 @@ const AISummaryCard: React.FC = () => {
     );
   })();
 
+  onAnalysisCheck?.(isToday);
+
   if (!isToday) {
-    return <div className="rounded-xl bg-white p-12 py-16 space-y-4">
-      <span className={dashboardStyles.subHeading}>
-        Hey, <span className="font-bold">{authUser?.userFname || "Guest Account"}! 👋</span>
-      </span>
-      <h2 className={styles.superTitle}>No Analysis Generated.</h2>
-      <p className="text-gray-800 w-3/4 text-lg">Currently, there is no analysis generated today.</p>
-    </div>;
+    return (
+      <div className="rounded-xl bg-white p-12 py-16 space-y-4">
+        <span className={dashboardStyles.subHeading}>
+          Hey, <span className="font-bold">{authUser?.userFname || "Guest Account"}! 👋</span>
+        </span>
+        <h2 className={styles.superTitle}>No Analysis Generated.</h2>
+        <p className="text-gray-800 w-3/4 text-lg">Currently, there is no analysis generated today.</p>
+      </div>
+    );
   }
 
   const { headline, short_summary } = latestEntry.analysis;

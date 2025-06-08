@@ -9,6 +9,9 @@ import styles from '../styles/plotCard.module.css';
 
 // Assets
 import mascot from '../assets/mascots/curious_soil.png';
+import sadbg from '../assets/exported/sad_bg.png';
+import poster from '../assets/exported/happy_bg.png';
+import confusedMascot from '../assets/mascots/confused.png';
 import disconnectedHardware from '../assets/hardware/nano_not_connected.png';
 
 export default function DashboardPage() {
@@ -18,6 +21,7 @@ export default function DashboardPage() {
   const getUserPlot = usePlotStore((state) => state.getUserPlot);
 
   const [loading, setLoading] = useState(true);
+
 
   const isToday = (() => {
     if (!aiSummary?.analysis_date) return false;
@@ -39,6 +43,8 @@ export default function DashboardPage() {
       ]).finally(() => setLoading(false));
     }
   }, [authUser]);
+
+    const hasAnalysis = isToday && !!aiSummary?.summary;
 
   return (
     <div className="min-h-screen min-w-screen">
@@ -73,8 +79,8 @@ export default function DashboardPage() {
 
           <div className='px-12'>
             <img
-              src={mascot}
-              alt="Curious Soil Mascot"
+              src={isToday ? mascot : confusedMascot}
+              alt={isToday ? "Curious Soil Mascot" : "Confused Mascot"}
               className="h-80 w-80 object-contain rounded-lg justify-items-center"
             />
           </div>
@@ -85,7 +91,7 @@ export default function DashboardPage() {
           {/* Weather Section */}
           <div className="col-span-2">
             {loading ? (
-              <div className="bg-gray-200 rounded-lg p-6 animate-pulse space-y-4">
+              <div className="bg-gray-200 rounded-lg p-6 animate-pulse space-y-4 h-full">
                 <div className="h-6 bg-gray-400 rounded w-1/2" />
                 <div className="h-4 bg-gray-300 rounded w-full" />
                 <div className="h-4 bg-gray-300 rounded w-[80%]" />
@@ -96,13 +102,26 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {/* Placeholder Card */}
-          <div className="col-span-2 bg-white rounded-lg gap-4 p-6 flex flex-col justify-between">
-            {/* Add future content or keep blank */}
-            <div className="text-sm text-gray-400">Content goes here</div>
+          {/* Analysis Image Module */}
+          <div className="col-span-2 h-[320px] relative overflow-hidden bg-white rounded-lg">
+            <img
+              src={hasAnalysis ? poster : sadbg}
+              alt={hasAnalysis ? "Daily Analysis Background" : "No Analysis Found"}
+              className="absolute inset-0 h-full w-full object-cover object-center rounded-lg"
+            />
+            <div className="absolute inset-0 flex flex-col justify-center items-start p-8">
+              {hasAnalysis ? (
+                  <span className={`${styles.greenTitle}`}>
+                    Your Daily Analysis <br /> is Ready
+                  </span>  
+              ) : (
+                <span className={`${styles.greenTitle}`}>
+                  No Daily AI Analysis<br /> has been found!
+                </span>
+              )}
+            </div>
           </div>
         </div>
-
         {/* Row 3 */}
         <div className="flex flex-col md:flex-row w-full md:h-70 h-auto space-y-4 md:space-y-0 md:space-x-4 mb-4">
           <div className="w-full md:w-2/3 bg-white p-[20px] rounded-lg h-79">
@@ -126,7 +145,7 @@ export default function DashboardPage() {
           <div className="w-full h-79 md:w-1/3 bg-white p-4 rounded-lg">
             <div className="flex flex-col">
               <div className="bg-gray-100 rounded-lg p-4 mb-4 flex flex-col items-center justify-center">
-                <img
+                 <img
                   src={disconnectedHardware}
                   alt="Disconnected Hardware"
                   className="h-50 w-50 object-contain rounded-lg"

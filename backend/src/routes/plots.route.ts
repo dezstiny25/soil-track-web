@@ -308,52 +308,59 @@ router.get("/get-user-sensors", async (req, res) => {
 
   if (!user_id) {
     res.status(400).json({ error: "Missing user_id" });
-  }
+  } else {
+    try {
+      // Step 1: Get plot IDs for the user
+      const { data: userPlots, error: userPlotsError } = await supabase
+        .from("user_plots")
+        .select("plot_id")
+        .eq("user_id", user_id);
 
-  try {
-    // Step 1: Get plot IDs for the user
-    const { data: userPlots, error: userPlotsError } = await supabase
-      .from("user_plots")
-      .select("plot_id")
-      .eq("user_id", user_id);
+      if (userPlotsError) {
+        throw userPlotsError;
+      } else {
+        const plotIds = userPlots.map((p) => p.plot_id);
 
-    if (userPlotsError) throw userPlotsError;
+        if (plotIds.length === 0) {
+          res.json({ sensors: [] }); // still early exit
+        } else {
+          // Step 2: Get sensor IDs for these plots
+          const { data: userSensors, error: sensorError } = await supabase
+            .from("user_plot_sensors")
+            .select(`
+              sensor_id,
+              plot_id,
+              soil_sensors (
+                sensor_name,
+                sensor_category
+              )
+            `)
+            .in("plot_id", plotIds);
 
-    const plotIds = userPlots.map((p) => p.plot_id);
+          if (sensorError) {
+            throw sensorError;
+          } else {
+            // Step 3: Format sensor info
+            const sensors = userSensors.map((item: any) => ({
+              sensor_id: item.sensor_id,
+              plot_id: item.plot_id,
+              sensor_name: item.soil_sensors?.sensor_name ?? "Unknown",
+              sensor_category: item.soil_sensors?.sensor_category ?? "Unknown",
+            }));
 
-    if (plotIds.length === 0) {
-      res.json({ sensors: [] }); // No plots, no sensors
+            res.json({ sensors });
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Failed to get user sensors", err);
+      if (!res.headersSent) {
+        res.status(500).json({ error: "Failed to fetch sensors" });
+      }
     }
-
-    // Step 2: Get sensor IDs for these plots
-    const { data: userSensors, error: sensorError } = await supabase
-      .from("user_plot_sensors")
-      .select(`
-        sensor_id,
-        plot_id,
-        soil_sensors (
-          sensor_name,
-          sensor_category
-        )
-      `)
-      .in("plot_id", plotIds);
-
-    if (sensorError) throw sensorError;
-
-    // Step 3: Format sensor info
-    const sensors = userSensors.map((item: any) => ({
-      sensor_id: item.sensor_id,
-      plot_id: item.plot_id,
-      sensor_name: item.soil_sensors?.sensor_name ?? "Unknown",
-      sensor_category: item.soil_sensors?.sensor_category ?? "Unknown",
-    }));
-
-    res.json({ sensors });
-  } catch (err) {
-    console.error("Failed to get user sensors", err);
-    res.status(500).json({ error: "Failed to fetch sensors" });
   }
 });
+
 
 // plots.route.ts
 // In plots.route.ts

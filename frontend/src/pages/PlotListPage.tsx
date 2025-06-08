@@ -8,7 +8,21 @@ import styles from "../styles/plotCard.module.css";
 
 const PlotListPage = () => {
   const navigate = useNavigate();
+  const aiSummary = usePlotStore((state) => state.aiSummary);
+  const getAiSummary = usePlotStore((state) => state.getAiSummary);
   const authUser = useAuthStore((state) => state.authUser);
+
+  const isToday = (() => {
+    if (!aiSummary?.analysis_date) return false;
+    const today = new Date();
+    const summaryDate = new Date(aiSummary.analysis_date);
+    return (
+      today.getFullYear() === summaryDate.getFullYear() &&
+      today.getMonth() === summaryDate.getMonth() &&
+      today.getDate() === summaryDate.getDate()
+    );
+
+  })();
   const {
     plots,
     getUserPlot,
@@ -19,6 +33,7 @@ const PlotListPage = () => {
   useEffect(() => {
     if (authUser?.user_id) {
       getUserPlot(authUser.user_id);
+      getAiSummary(authUser.user_id)
     }
   }, [authUser?.user_id, getUserPlot]);
 
@@ -53,7 +68,7 @@ const PlotListPage = () => {
 
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     <span className={styles.cropBadge}>
-                      {plot.user_crops?.crop_name || "Unknown Crop"}
+                      {plot.user_crops?.crop_name || "No Crop Assigned"}
                     </span>
                     <button
                       onClick={() => goToPlotPage(plot.plot_id)}
@@ -72,7 +87,15 @@ const PlotListPage = () => {
                   NPK Sensors {hasNpkSensors ? "Assigned" : "None"}
                 </p>
 
-                <p className={styles.analysisText}>Analysis has been generated</p>
+                <p className={isToday 
+                  ? styles.analysisText
+                  : styles.analysisTextRed
+                }>
+                  {isToday 
+                    ? "Analysis has been generated"
+                    : "No analysis available"}
+                </p>
+
               </div>
             );
           })}

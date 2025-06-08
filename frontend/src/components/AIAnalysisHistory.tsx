@@ -50,19 +50,19 @@ const AIAnalysisHistory: React.FC = () => {
         <h2 className={styles.medText}>Analysis List History:</h2>
 
         {/* Filter Buttons */}
-        <div className={styles.cropBadge}>
+        <div className={styles.toggleContainer}>
           <button
             onClick={() => setFilterType("Daily")}
-            className={`px-3 py-1 text-sm rounded-lg ${
-              filterType === "Daily" ? "bg-white text-gray-700" : "text-white"
+            className={`${styles.rangeButton} ${
+              filterType === "Daily" ? styles.active : ""
             }`}
           >
             Daily
           </button>
           <button
             onClick={() => setFilterType("Weekly")}
-            className={`px-3 py-1 text-sm rounded-lg ${
-              filterType === "Weekly" ? "bg-white text-gray-700" : "text-white"
+            className={`${styles.rangeButton} ${
+              filterType === "Weekly" ? styles.active : ""
             }`}
           >
             Weekly

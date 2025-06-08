@@ -3,6 +3,7 @@ import ReactApexChart from 'react-apexcharts';
 import dayjs, { Dayjs } from 'dayjs';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
+import PercentageChange from './PercentageChange';
 
 dayjs.extend(isSameOrBefore);
 dayjs.extend(isSameOrAfter);
@@ -66,6 +67,14 @@ const WebDetailedChart: React.FC<WebDetailedChartProps> = ({
   const categories = filteredReadings.map((r) => r.read_time);
   const dataValues = filteredReadings.map((r) => r[dataKey]);
 
+  // Compute latest and previous for % change
+  const sorted = [...filteredReadings]
+    .filter((r) => r[dataKey] !== null && r[dataKey] !== undefined)
+    .sort((a, b) => new Date(b.read_time).getTime() - new Date(a.read_time).getTime());
+
+  const latest = sorted[0]?.[dataKey] ?? null;
+  const previous = sorted[1]?.[dataKey] ?? null;
+
   const color = (() => {
     const key = dataKey.toLowerCase();
     if (key.includes('moisture')) return COLOR_MAP.moisture;
@@ -125,7 +134,10 @@ const WebDetailedChart: React.FC<WebDetailedChartProps> = ({
 
   return (
     <div className="p-4 bg-white">
-      <h3 className="px-4 text-md font-semibold text-gray-700 mb-2">{title}</h3>
+      <div className="px-4 mb-2 flex items-center justify-between">
+        <h3 className="text-md font-semibold text-gray-700">{title}</h3>
+        <PercentageChange current={latest} previous={previous} />
+      </div>
       <ReactApexChart options={options} series={series} type="area" height={300} />
     </div>
   );

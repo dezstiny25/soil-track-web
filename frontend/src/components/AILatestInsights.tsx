@@ -1,9 +1,10 @@
 import React, { useEffect } from "react";
 import { usePlotStore } from "../store/usePlotStore";
+import dayjs from "dayjs";
 import "../index.css";
 import styles from "../styles/plotCard.module.css";
 
-export function AILatestInsights() {
+export function AILatestInsights({ analysisType }: { analysisType: "Daily" | "Weekly" }) {
   const selectedPlotId = usePlotStore((state) => state.selectedPlotId);
   const aiHistory = usePlotStore((state) => state.aiHistory);
   const getAiHistory = usePlotStore((state) => state.getAiHistory);
@@ -22,14 +23,31 @@ export function AILatestInsights() {
     return <p>Loading AI insights...</p>;
   }
 
+  const now = dayjs();
+  const sevenDaysAgo = now.subtract(7, "day");
+
   const englishEntries = aiHistory.filter(
     (entry) =>
       entry.language_type === "en" &&
-      entry.analysis?.AI_Analysis?.summary
+      entry.analysis_type === analysisType &&
+      entry.analysis?.AI_Analysis?.summary &&
+      (
+        analysisType === "Daily" ||
+        (analysisType === "Weekly" &&
+          dayjs(entry.analysis_date).isAfter(sevenDaysAgo) &&
+          dayjs(entry.analysis_date).isBefore(now.add(1, "day"))
+        )
+      )
   );
 
   if (englishEntries.length === 0) {
-    return <p>No English AI findings available for this plot.</p>;
+    return (
+      <p>
+        {analysisType === "Weekly"
+          ? "No weekly analysis available."
+          : "No English AI findings available for this plot."}
+      </p>
+    );
   }
 
   const latestEntry = englishEntries.reduce((latest, current) => {

@@ -1,56 +1,79 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import TabNavigation from '../components/TabNavigation';
-
-// CSS
 
 import '../index.css';
 import dashboardStyles from '../styles/dashboard.module.css';
 import plotStyles from '../styles/plots.module.css';
 
-// Pages
-import WebController from './web_controller';
-import WebPumpValves from './web_pumps_valves';
+import WebController from '../components/web_controller';
+import WebPumpValves from '../components/web_pumps_valves';
+import SensorDetailsList from '../components/SensorDetailsList';
+
+import { useAuthStore } from '../store/useAuthStore';
+import { usePlotStore } from '../store/usePlotStore';
 
 const chartTabs = [
   { id: 'Controller', name: 'Controller', to: '/web_controller' },
   { id: 'Pump and Valves', name: 'Pump and Valves', to: '/web_pump_and_valves' },
 ];
 
-
 export default function WebDevices() {
-      const [activeTabChart, setActiveTab] = useState('Controller');
-    return (
-        <div className="min-h-screen min-w-screen">
-            <main className="flex-grow container mt-0 py-8 pt-0 space-y-8">
+  const [activeTabChart, setActiveTab] = useState('Controller');
+  const authUser = useAuthStore((state) => state.authUser);
+  const getUserSensors = usePlotStore((state) => state.getUserSensors);
+  const userSensorsByPlot = usePlotStore((state) => state.userSensorsByPlot);
 
-                {/* Row 1: Header Title and Control */}
-                <div className={`${dashboardStyles.header} ${plotStyles.header} flex items-center justify-between mb-8`}>
-                    <span className={`${dashboardStyles.mainTitle} font-semibold text-[#134F14]`}><span className='text-[#838383]'>Hey</span>, your device is not connected.</span>
-                    <div className="flex items-center space-x-4">
-                        {/* Placeholder for any control buttons */}
-                        <TabNavigation
-                            tabs={chartTabs}
-                            activeTab={activeTabChart}
-                            onTabChange={setActiveTab}
-                            size="md"
-                            fullWidth={false}
-                            className=""
-                        />
-                    </div>
-                </div>
+  useEffect(() => {
+    if (authUser?.user_id) {
+      getUserSensors(authUser.user_id);
+    }
+  }, [authUser?.user_id, getUserSensors]);
 
-                {/* Call controller here */}
-                
-                {/* Render content based on active tab */}
-                {activeTabChart === 'Controller' && (
-                    <WebController />
-                )}
-                {activeTabChart === 'Pump and Valves' && (
-                    <WebPumpValves />
-                )}
-                {/* You can add more conditions for other tabs if needed */}
+  const allSensors = useMemo(() => {
+    return Object.values(userSensorsByPlot).flat();
+  }, [userSensorsByPlot]);
 
-            </main>
+  return (
+    <div className="min-h-screen min-w-screen">
+      <main className="flex-grow container mt-0 py-8 pt-0 space-y-8 mx-auto">
+        <div className={`${dashboardStyles.header} ${plotStyles.header} flex items-center justify-between mb-8`}>
+          <span className={`${dashboardStyles.mainTitle} font-semibold text-[#134F14]`}>
+            <span className="text-[#838383]">Hey</span>, your device is not connected.
+          </span>
+          <div className="flex items-center space-x-4">
+            <TabNavigation
+              tabs={chartTabs}
+              activeTab={activeTabChart}
+              onTabChange={setActiveTab}
+              size="md"
+              fullWidth={false}
+            />
+          </div>
         </div>
-    )
+
+        {/* Render tabs */}
+        {activeTabChart === 'Controller' && (
+          <WebController sensors={allSensors} />
+        )}
+        {activeTabChart === 'Pump and Valves' && (
+          <WebPumpValves sensors={allSensors} />
+        )}
+
+        <div className="flex flex-row w-full mb-4">
+          <div className="w-full text-start py-4">
+            <span className={dashboardStyles.deviceMessage}>
+              If your ESP32 and Arduino Nano is not connected, the sensors might not function properly.
+            </span>
+          </div>
+        </div>
+
+        <div className="w-full">
+          <h2 className="text-xl font-bold text-gray-700 mb-2">Sensors in this Plot</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <SensorDetailsList />
+          </div>
+        </div>
+      </main>
+    </div>
+  );
 }

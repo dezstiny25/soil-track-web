@@ -56,9 +56,6 @@ const sensorCountByCategory = getSensorCountByCategory();
         <div className="border rounded-lg p-5 bg-gray-50 relative">
           <div className={styles.gsText}>Crop Planted:</div>
           <div className={styles.smallText}>{crop}</div>
-          <button className="absolute top-2 right-2 text-gray-600 hover:text-black">
-            <Pencil size={16} />
-          </button>
         </div>
 
         <div className="border rounded-lg p-5 bg-gray-50 relative">

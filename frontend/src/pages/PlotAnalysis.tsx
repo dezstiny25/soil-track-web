@@ -21,6 +21,7 @@ const Dashboard = () => {
   const [showWarnings, setShowWarnings] = useState(true);
   const [selectedRange, setSelectedRange] = useState<'1D' | '1W' | '1M' | '3M'>('1D');
   const [selectedDate, setSelectedDate] = useState(dayjs().format('YYYY-MM-DD'));
+  const [analysisType, setAnalysisType] = useState<'Daily' | 'Weekly'>('Daily');
 
   const {
     selectedPlotId,
@@ -39,6 +40,13 @@ const Dashboard = () => {
       getFullPlotDetails(selectedPlotId);
     }
   }, [selectedPlotId]);
+
+  useEffect(() => {
+    if (analysisType === 'Weekly') {
+      setSelectedRange('1W');
+    }
+  }, [analysisType]);
+
 
   const englishEntries = aiHistory?.filter(
     (entry) => entry.language_type === 'en' && entry.findings
@@ -60,14 +68,22 @@ const Dashboard = () => {
           Hey, <span className={styles.greenTitle}>Here is your plot findings:</span>
         </h1>
         <div className="text-right">
-          <div className={styles.pageBadge}>
-            Daily Analysis
+          <div className={styles.toggleContainer}>
+            {['Daily', 'Weekly'].map(type => (
+              <button
+                key={type}
+                onClick={() => setAnalysisType(type as 'Daily' | 'Weekly')}
+                className={`${styles.rangeButton} ${analysisType === type ? styles.active : ''}`}
+              >
+                {type} Analysis
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
       <div className="gap-4 mb-6">
-        <AILatestInsights />
+        <AILatestInsights analysisType={analysisType} />
       </div>
 
       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6">
@@ -91,15 +107,15 @@ const Dashboard = () => {
           {selectedPlotDetails && (
             <>
               <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
-                <div className={styles.cropBadge}>
+                <div className={styles.toggleContainer}>
                   {Object.keys(TIME_RANGES).map(range => (
                     <button
                       key={range}
                       onClick={() => setSelectedRange(range as keyof typeof TIME_RANGES)}
-                      className={`px-5 py-1 rounded-lg text-sm ${
+                      className={`${styles.rangeButton} ${
                         selectedRange === range
-                          ? 'bg-white text-gray-700'
-                          : 'text-white'
+                          ? styles.active
+                          : ''
                       }`}
                     >
                       {range}
@@ -179,7 +195,7 @@ const Dashboard = () => {
             showWarnings ? 'max-h-[2000px] mt-4' : 'max-h-0'
           }`}
         >
-          <AIWarnings />
+          <AIWarnings analysisType={analysisType} />
         </div>
       </div>
     </div>

@@ -13,6 +13,9 @@ import AIAnalysisHistory from "../components/AIAnalysisHistory";
 import IrrigationLogHistory from '../components/IrrigationLogHistory';
 import dayjs from 'dayjs';
 import styles from "../styles/plotCard.module.css";
+import noAnalysisImage from "../assets/exported/no_anal.png";
+
+
 
 const TIME_RANGES = {
   '1D': 1,
@@ -69,6 +72,7 @@ const PlotPageSkeleton = () => {
 
 
 export default function PlotsPage() {
+  const [hasAnalysis, setHasAnalysis] = useState(false);
   const { plotId } = useParams();
   const navigate = useNavigate();
   const { selectedPlotDetails, getFullPlotDetails } = usePlotStore();
@@ -105,24 +109,34 @@ export default function PlotsPage() {
         {/* Top Summary Cards */}
         <div className="grid grid-cols-7 gap-4">
           <div className="col-span-5 h-[400px] relative overflow-hidden bg-white rounded-lg border shadow-sm">
-            <AISummaryCard />
+            <AISummaryCard onAnalysisCheck={setHasAnalysis} />
           </div>
+
           <div className="col-span-2 h-[400px] relative overflow-hidden bg-white rounded-lg">
             <img
-              src={dailyAnalysis}
-              alt="Daily Analysis Background"
+              src={hasAnalysis ? dailyAnalysis : noAnalysisImage}
+              alt={hasAnalysis ? "Daily Analysis Background" : "No Analysis Found"}
               className="absolute inset-0 h-full w-full object-cover object-top rounded-lg"
             />
+
             <div className="absolute inset-0 flex flex-col justify-end items-center pb-6 space-y-3">
-              <span className={`${plotStyles.analysisText} text-white text-center mb-1`}>
-                Your Daily Analysis <br />is Ready
-              </span>
-              <button
-                onClick={() => navigate(`/plots/${plotId}/analysis`)}
-                className="px-4 py-2 bg-white text-[#134F14] w-3/4 rounded-full text-sm"
-              >
-                Go to daily analysis
-              </button>
+              {hasAnalysis ? (
+                <>
+                  <span className={`${plotStyles.analysisText} text-white text-center mb-1`}>
+                    Your Daily Analysis <br />is Ready
+                  </span>
+                  <button
+                    onClick={() => navigate(`/plots/${plotId}/analysis`)}
+                    className="px-4 py-2 bg-white text-[#134F14] w-3/4 rounded-full text-sm"
+                  >
+                    Go to daily analysis
+                  </button>
+                </>
+              ) : (
+                <span className={`${plotStyles.analysisText} text-center mb-1`}>
+                  No Daily AI Analysis<br/> has been found!
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -138,15 +152,16 @@ export default function PlotsPage() {
                 </p>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
-                <div className={styles.cropBadge}>
+                <div className={styles.toggleContainer}>
                   {Object.keys(TIME_RANGES).map(range => (
                     <button
                       key={range}
                       onClick={() => setSelectedRange(range as keyof typeof TIME_RANGES)}
-                      className={`px-5 py-1 rounded-lg text-sm ${
-                        selectedRange === range
-                          ? 'bg-white text-gray-700'
-                          : 'text-white'
+                      className={`
+                        ${styles.rangeButton} 
+                        ${selectedRange === range
+                          ? styles.active
+                          : ''
                       }`}
                     >
                       {range}
@@ -214,8 +229,7 @@ export default function PlotsPage() {
                         <div className="text-sm text-gray-500">{titleMap[dataKey]}</div>
                         <div className="text-lg font-bold">{latest}mg/l</div>
                         {percentChange !== null && (
-                          <div
-                            className={`text-sm mt-1 ${
+                          <div className={`text-sm mt-1 ${
                               Number(percentChange) >= 0 ? 'text-green-600' : 'text-red-600'
                             }`}
                           >
