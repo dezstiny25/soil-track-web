@@ -31,7 +31,6 @@ router.get("/get-plots", async (req, res) => {
      res.status(500).json({ error: error.message });
   }
 
-  console.log("plots working", data);
   res.json({ plots: data });
 });
 

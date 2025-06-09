@@ -1,7 +1,7 @@
 import {
   BarChart3,
   LayoutDashboard,
-  Settings,
+
   UserCircle2,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
@@ -71,13 +71,7 @@ export default function NavbarItemsList() {
         alert={false}
         onClick={() => navigate("/devices")}
       />
-      <NavbarItem
-        icon={<Settings size={16} />}
-        text="Settings"
-        active={currentPath === "/settings"}
-        alert={false}
-        onClick={() => navigate("/settings")}
-      />
+      
     </>
   );
 

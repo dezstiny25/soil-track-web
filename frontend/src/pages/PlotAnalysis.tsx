@@ -1,4 +1,4 @@
-//PlotAnalysis.tsx
+// PlotAnalysis.tsx
 import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import dayjs from 'dayjs';
@@ -6,7 +6,6 @@ import { usePlotStore } from '../store/usePlotStore';
 import AILatestInsights from '../components/AILatestInsights';
 import AIWarnings from '../components/AIWarnings';
 import WebDetailedChart from '../components/charts/WebDetailedChart';
-import WebSmallChart from '../components/charts/WebSmallChart';
 import "../index.css";
 import styles from "../styles/plotCard.module.css";
 
@@ -17,7 +16,14 @@ const TIME_RANGES = {
   '3M': 90,
 };
 
-const Dashboard = () => {
+const SkeletonBlock = ({ width = "100%", height = 20, className = "" }) => (
+  <div
+    className={`bg-gray-300 animate-pulse rounded ${className}`}
+    style={{ width, height }}
+  />
+);
+
+const PlotAnalysis = () => {
   const [showTrends, setShowTrends] = useState(true);
   const [showWarnings, setShowWarnings] = useState(true);
   const [selectedRange, setSelectedRange] = useState<'1D' | '1W' | '1M' | '3M'>('1D');
@@ -48,7 +54,39 @@ const Dashboard = () => {
     }
   }, [analysisType]);
 
+  const isLoading = !selectedPlotDetails || !aiHistory;
 
+  if (isLoading) {
+    // Skeleton UI while loading data
+    return (
+      <div className="p-6 bg-gray-50 min-h-screen space-y-6">
+        <div className="flex justify-between items-center mb-6">
+          <SkeletonBlock width="40%" height={32} />
+          <SkeletonBlock width="20%" height={32} />
+        </div>
+
+        <div className="mb-6">
+          <SkeletonBlock width="100%" height={150} />
+        </div>
+
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6 space-y-4">
+          <SkeletonBlock width="30%" height={28} />
+          <div className="grid md:grid-cols-2 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <SkeletonBlock key={i} height={200} />
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6 space-y-4">
+          <SkeletonBlock width="50%" height={28} />
+          <SkeletonBlock width="100%" height={100} />
+        </div>
+      </div>
+    );
+  }
+
+  // Existing full UI when data is ready
   const englishEntries = aiHistory?.filter(
     (entry) => entry.language_type === 'en' && entry.findings
   );
@@ -203,4 +241,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default PlotAnalysis;
