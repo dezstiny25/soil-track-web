@@ -1,4 +1,3 @@
-// PlotsPage.tsx
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { usePlotStore } from '../store/usePlotStore';
@@ -14,8 +13,6 @@ import IrrigationLogHistory from '../components/IrrigationLogHistory';
 import dayjs from 'dayjs';
 import styles from "../styles/plotCard.module.css";
 import noAnalysisImage from "../assets/exported/no_anal.png";
-
-
 
 const TIME_RANGES = {
   '1D': 1,
@@ -69,7 +66,6 @@ const PlotPageSkeleton = () => {
     </div>
   );
 };
-
 
 export default function PlotsPage() {
   const [hasAnalysis, setHasAnalysis] = useState(false);
@@ -159,10 +155,8 @@ export default function PlotsPage() {
                       onClick={() => setSelectedRange(range as keyof typeof TIME_RANGES)}
                       className={`
                         ${styles.rangeButton} 
-                        ${selectedRange === range
-                          ? styles.active
-                          : ''
-                      }`}
+                        ${selectedRange === range ? styles.active : ''}
+                      `}
                     >
                       {range}
                     </button>
@@ -186,75 +180,78 @@ export default function PlotsPage() {
                 </div>
               </div>
             </div>
-            {/* Charts Layout */}
+
             <div className="grid grid-cols-6 gap-6">
-                {/* Left: Main Chart and Controls */}
-                <div className="col-span-4 bg-white p-4">
-                  <WebDetailedChart
-                    title="Moisture"
-                    readings={moisture_readings}
-                    dataKey="soil_moisture"
-                    unit="%"
-                    selectedRange={selectedRange}
-                    currentStartDate={currentStartDate}
-                    currentEndDate={currentEndDate}
-                  />
-                </div>
-                {/* Right: Nutrient Stat Cards */}
+              {/* Left Chart */}
+              <div className="col-span-4 bg-white p-4">
+                <WebDetailedChart
+                  title="Moisture"
+                  readings={moisture_readings}
+                  dataKey="soil_moisture"
+                  unit="%"
+                  selectedRange={selectedRange}
+                  currentStartDate={currentStartDate}
+                  currentEndDate={currentEndDate}
+                />
+              </div>
+
+              {/* Right Cards */}
               <div className="col-span-2 space-y-4">
                 {['readed_nitrogen', 'readed_potassium', 'readed_phosphorus'].map((dataKey) => {
-                const titleMap: Record<string, string> = {
-                  readed_nitrogen: 'Nitrogen',
-                  readed_potassium: 'Potassium',
-                  readed_phosphorus: 'Phosphorus',
-                };
+                  const titleMap: Record<string, string> = {
+                    readed_nitrogen: 'Nitrogen',
+                    readed_potassium: 'Potassium',
+                    readed_phosphorus: 'Phosphorus',
+                  };
 
-                const sortedReadings = [...nutrient_readings]
-                  .filter(r => r[dataKey] !== null && r[dataKey] !== undefined)
-                  .sort((a, b) => new Date(b.read_time).getTime() - new Date(a.read_time).getTime());
+                  const filteredReadings = [...nutrient_readings]
+                    .filter(r => typeof r[dataKey] === 'number')
+                    .sort((a, b) => new Date(a.read_time).getTime() - new Date(b.read_time).getTime());
 
-                const latest = sortedReadings[0]?.[dataKey] ?? 'N/A';
-                const previous = sortedReadings[1]?.[dataKey];
+                  const oldest: number | null = filteredReadings[filteredReadings.length - 1]?.[dataKey] ?? null;
+                  const latest: number | null = filteredReadings[0]?.[dataKey] ?? null;
 
-                const percentChange =
-                  latest !== 'N/A' && previous
-                    ? (((latest - previous) / previous) * 100).toFixed(1)
-                    : null;
-
-                return (
-                  <div key={dataKey} className="bg-white border rounded-lg p-4 shadow-sm">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      {/* Left side: Text */}
-                      <div className="col-span-1">
-                        <div className="text-sm text-gray-500">{titleMap[dataKey]}</div>
-                        <div className="text-lg font-bold">{latest}mg/l</div>
-                        {percentChange !== null && (
-                          <div className={`text-sm mt-1 ${
-                              Number(percentChange) >= 0 ? 'text-green-600' : 'text-red-600'
-                            }`}
-                          >
-                            {Number(percentChange) >= 0 ? '+' : ''}
-                            {percentChange}%
+                  let percentChange: string | null = null;
+                  if (latest !== null && oldest !== null && oldest !== 0) {
+                    percentChange = (((oldest - latest) / latest) * 100).toFixed(1);
+                  }
+                  return (
+                    <div key={dataKey} className="bg-white border rounded-lg p-4 shadow-sm">
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        {/* Stat */}
+                        <div className="col-span-1">
+                          <div className="text-sm text-gray-500">{titleMap[dataKey]}</div>
+                          <div className="text-lg font-bold">
+                            {latest !== null ? `${latest}mg/l` : 'N/A'}
                           </div>
-                        )}
-                      </div>
+                          {percentChange !== null && (
+                            <div
+                              className={`text-sm mt-1 ${
+                                Number(percentChange) >= 0 ? 'text-green-600' : 'text-red-600'
+                              }`}
+                            >
+                              {Number(percentChange) >= 0 ? '+' : ''}
+                              {percentChange}%
+                            </div>
+                          )}
+                        </div>
 
-                      {/* Right side: Chart */}
-                      <div className="col-span-3">
-                        <WebSmallChart
-                          readings={nutrient_readings}
-                          dataKey={dataKey}
-                          unit=""
-                          selectedRange={selectedRange}
-                          currentStartDate={currentStartDate}
-                          currentEndDate={currentEndDate}
-                          isMini={true}
-                        />
+                        {/* Chart */}
+                        <div className="col-span-3">
+                          <WebSmallChart
+                            readings={nutrient_readings}
+                            dataKey={dataKey}
+                            unit=""
+                            selectedRange={selectedRange}
+                            currentStartDate={currentStartDate}
+                            currentEndDate={currentEndDate}
+                            isMini={true}
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -281,6 +278,5 @@ export default function PlotsPage() {
         </div>
       </main>
     </div>
-    
   );
 }

@@ -12,7 +12,7 @@ import mascot from '../assets/mascots/curious_soil.png';
 import sadbg from '../assets/exported/sad_bg.png';
 import poster from '../assets/exported/happy_bg.png';
 import confusedMascot from '../assets/mascots/confused.png';
-import disconnectedHardware from '../assets/hardware/nano_not_connected.png';
+import disconnectedHardware from '../assets/hardware/nano_not_connected_with_shadow.png';
 
 export default function DashboardPage() {
   const authUser = useAuthStore((state) => state.authUser);

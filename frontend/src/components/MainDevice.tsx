@@ -1,4 +1,5 @@
-    import dashboardStyles from '../styles/dashboard.module.css';
+//MainDevice.tsx
+import dashboardStyles from '../styles/dashboard.module.css';
 import React from 'react';
 
 interface MainDeviceProps {
@@ -56,7 +57,7 @@ const MainDevice: React.FC<MainDeviceProps> = ({
           </div>
         )}
         {/* Status Text */}
-        <div className={`${dashboardStyles.deviceStatusOffline} ${status === 'disconnected' ? 'text-[#C42727]' : 'text-[#27C46A]'}`}>
+        <div className={`${status === 'disconnected' ? `${dashboardStyles.deviceStatusOffline}` : `${dashboardStyles.deviceStatusOnline}`}`}>
           {status === 'disconnected' ? 'Disconnected' : 'Connected'}
         </div>
           </div>

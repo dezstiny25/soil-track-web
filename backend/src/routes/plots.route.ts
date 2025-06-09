@@ -136,102 +136,117 @@ router.get("/analytics", async (req, res) => {
     res.status(500).json({ message: "Failed to fetch plot analytics", error });
   }
 });
-
 router.get("/ai-summary", async (req, res) => {
   const user_id = req.query.user_id as string;
 
   if (!user_id) {
     res.status(400).json({ error: "Missing user_id" });
-  }
+  } else {
+    try {
+      const { data, error } = await supabase
+        .from("ai_summary")
+        .select("*")
+        .eq("user_id", user_id)
+        .order("analysis_date", { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-  try {
-    const { data, error } = await supabase
-      .from("ai_summary")
-      .select("*")
-      .eq("user_id", user_id)
-      .order("analysis_date", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      if (error) {
+        console.error("Supabase error:", error);
+        res.status(500).json({ error: "Database error fetching AI summary" });
+      } else {
+        // Defaults for when data is null or incomplete
+        let headline = "No headline";
+        let summary = "No summary available";
+        let analysis_date: string | null = null;
 
-    if (error || !data) {
-      console.error("Supabase error or no data:", error);
-      res.status(404).json({ error: "AI summary not found" });
+        if (data) {
+          analysis_date = data.analysis_date || null;
+          const rawAnalysis = data.summary_analysis;
+
+          if (rawAnalysis) {
+            try {
+              const parsed = typeof rawAnalysis === "string" ? JSON.parse(rawAnalysis) : rawAnalysis;
+              summary = parsed?.summary || parsed?.AI_Analysis?.summary || summary;
+              headline = parsed?.headline || parsed?.AI_Analysis?.headline || headline;
+            } catch (parseError) {
+              console.warn("Failed to parse summary_analysis JSON:", parseError);
+            }
+          }
+        }
+
+        res.status(200).json({ headline, summary, analysis_date });
+      }
+    } catch (error) {
+      console.error("Unexpected error:", error);
+      res.status(500).json({ error: "Unexpected server error" });
     }
-
-    const analysis = data.summary_analysis;
-    const parsed = typeof analysis === "string" ? JSON.parse(analysis) : analysis;
-    const summary = parsed?.summary || parsed?.AI_Analysis?.summary;
-    const headline = parsed?.headline || parsed?.AI_Analysis?.headline;
-
-    if (!summary) {
-      res.status(500).json({ error: "Invalid summary structure" });
-    }
-
-    res.json({
-      headline: headline || "No headline",
-      summary,
-      analysis_date: data.analysis_date, // 👈 Include date here
-    });
-  } catch (error) {
-    console.error("Failed to fetch or parse AI summary:", error);
-    res.status(500).json({ error: "Failed to fetch AI summary" });
   }
 });
 
-// Revised ai-history route with language_type included
+
 router.get("/ai-history", async (req, res) => {
   const plot_id = req.query.plot_id as string;
 
   if (!plot_id) {
-     res.status(400).json({ error: "Missing plot_id" });
+    res.status(400).json({ error: "Missing plot_id" });
   }
 
   try {
-    // Select language_type assuming it's a column in ai_analysis table
     const { data, error } = await supabase
       .from("ai_analysis")
       .select("analysis_date, analysis, analysis_type, language_type")
       .eq("plot_id", plot_id)
       .order("analysis_date", { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error("Supabase error:", error);
+      res.status(500).json({ error: "Database error fetching AI history" });
+    }
 
-    const parsedHistory = data.map((entry) => {
-    const parsed = typeof entry.analysis === "string" ? JSON.parse(entry.analysis) : entry.analysis;
-    const languageTypeFromJson = parsed?.AI_Analysis?.language_type;
-    const languageType = entry.language_type || languageTypeFromJson || "unknown";
+    const parsedHistory = (data || []).map((entry) => {
+      let parsed: any = {};
+      try {
+        parsed = typeof entry.analysis === "string" ? JSON.parse(entry.analysis) : (entry.analysis || {});
+      } catch (parseError) {
+        console.warn("Failed to parse entry.analysis:", parseError);
+        parsed = {};
+      }
 
-  return {
-    language_type: languageType,
-    analysis_type: entry.analysis_type || "unknown",
-    analysis: {
-      analysis_date: entry.analysis_date,
-      headline: parsed?.AI_Analysis?.headline || "No headline",
-      short_summary: parsed?.AI_Analysis?.short_summary || "No summary",
-      AI_Analysis: {
-        date: entry.analysis_date,
-        status: parsed?.AI_Analysis?.status || "unknown",
-        summary: {
-          findings: parsed?.AI_Analysis?.summary?.findings || "No findings",
-          predictions: parsed?.AI_Analysis?.summary?.predictions || "No predictions",
-          recommendations: parsed?.AI_Analysis?.summary?.recommendations || "No recommendations",
+      const aiAnalysis = parsed?.AI_Analysis || {};
+
+      return {
+        language_type: entry.language_type || aiAnalysis.language_type || "unknown",
+        analysis_type: entry.analysis_type || "unknown",
+        analysis: {
+          analysis_date: entry.analysis_date,
+          headline: aiAnalysis.headline || "No headline",
+          short_summary: aiAnalysis.short_summary || "No summary",
+          AI_Analysis: {
+            date: entry.analysis_date,
+            status: aiAnalysis.status || "unknown",
+            summary: {
+              findings: aiAnalysis.summary?.findings || "No findings",
+              predictions: aiAnalysis.summary?.predictions || "No predictions",
+              recommendations: aiAnalysis.summary?.recommendations || "No recommendations",
+            },
+            warnings: {
+              drought_risks: aiAnalysis.warnings?.drought_risks || "No drought risks",
+              nutrient_imbalances: aiAnalysis.warnings?.nutrient_imbalances || "No nutrient imbalance",
+            },
+          },
         },
-        warnings: {
-          drought_risks: parsed?.AI_Analysis?.warnings?.drought_risks || "No drought risks",
-          nutrient_imbalances: parsed?.AI_Analysis?.warnings?.nutrient_imbalances || "No nutrient imbalance",
-        },
-      },
-    },
-  };
-});
+      };
+    });
 
-
-    res.json({ history: parsedHistory });
+    res.status(200).json({ history: parsedHistory });
   } catch (error) {
     console.error("Failed to fetch AI history", error);
     res.status(500).json({ error: "Failed to fetch AI history" });
   }
 });
+
+
 
 router.get("/sensor-count", async (req, res) => {
   const plot_id = req.query.plot_id as string;
@@ -399,6 +414,30 @@ router.get("/sensor-details", async (req, res) => {
   }
 });
 
+router.get("/user-device", async (req, res) => {
+  const { user_id } = req.query;
+
+  if (!user_id) {
+    res.status(400).json({ error: "Missing user_id" });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("iot_device")
+      .select("*")
+      .eq("user_id", user_id)
+      .single(); // Return only one device
+
+    if (error) {
+      res.status(404).json({ error: "Device not found" });
+    }
+
+    res.json({ device: data });
+  } catch (err) {
+    console.error("Failed to fetch IoT device:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
 
 
 export default router;

@@ -117,6 +117,15 @@ interface GlobalIrrigationLog {
   mac_address: string;
 }
 
+interface IoTDevice {
+  id: string;
+  user_id: string;
+  mac_address: string;
+  name?: string;
+  created_at?: string;
+}
+
+
 interface PlotState {
   plots: Plot[] | null;
   selectedPlotId: string | null;
@@ -143,6 +152,10 @@ interface PlotState {
   globalIrrigationLogs: GlobalIrrigationLog[];
   getGlobalIrrigationLogs: (userId: string) => Promise<void>;
 
+  userDevice: IoTDevice | null;
+  getUserDevice: (userId: string) => Promise<void>;
+
+
   sensorDetailsByPlot: Record<string, SensorDetail[]>;
   getSensorDetails: (plotId: string) => Promise<void>;
   sensorDetails: () => SensorDetail[];
@@ -150,6 +163,7 @@ interface PlotState {
   getUserPlot: (userId: string) => Promise<void>;
   getFullPlotDetails: (plotId: string) => Promise<void>;
   setSelectedPlotId: (plotId: string) => void;
+
 }
 
 // Utility: fallback-safe promise handler
@@ -251,32 +265,48 @@ export const usePlotStore = create<PlotState>((set, get) => ({
     set({ selectedPlotId: plotId });
   },
 
-  getAiSummary: async (userId: string) => {
+getAiSummary: async (userId: string) => {
   try {
     const res = await axiosInstance.get("/plots/ai-summary", {
       params: { user_id: userId },
     });
 
-    set({ aiSummary: res.data });
+    const summary = res.data;
 
-    // Comparison logic
-    const today = new Date();
-    const summaryDate = new Date(res.data.analysis_date);
+    // Defensive check for required field
+    const hasValidDate = summary?.analysis_date && !isNaN(new Date(summary.analysis_date).getTime());
 
-    const isSameDay =
-      today.getFullYear() === summaryDate.getFullYear() &&
-      today.getMonth() === summaryDate.getMonth() &&
-      today.getDate() === summaryDate.getDate();
+    if (hasValidDate) {
+      const today = new Date();
+      const summaryDate = new Date(summary.analysis_date);
 
-    if (!isSameDay) {
-      console.warn("No AI summary generated today");
+      const isSameDay =
+        today.getFullYear() === summaryDate.getFullYear() &&
+        today.getMonth() === summaryDate.getMonth() &&
+        today.getDate() === summaryDate.getDate();
+
+      if (!isSameDay) {
+        console.warn("AI summary exists but not for today.");
+      }
+
+      set({ aiSummary: summary });
+    } else {
+      console.warn("AI summary data received but missing or invalid date.");
+      set({ aiSummary: null });
     }
 
-  } catch (error) {
-    console.error("Failed to fetch AI summary:", error);
+  } catch (error: any) {
+    if (error.response?.status === 404) {
+      console.warn("No AI summary available for this user.");
+    } else {
+      console.error("Error fetching AI summary:", error);
+    }
+
     set({ aiSummary: null });
   }
 },
+
+
 
   getSensorCount: async (plotId: string) => {
     try {
@@ -431,4 +461,19 @@ getUserSensors: async (userId: string) => {
     if (!plotId) return [];
     return get().sensorDetailsByPlot[plotId] || [];
   },
+
+  userDevice: null,
+
+  getUserDevice: async (userId: string) => {
+    try {
+      const res = await axiosInstance.get("/plots/user-device", {
+        params: { user_id: userId },
+      });
+      set({ userDevice: res.data.device });
+    } catch (err) {
+      console.error("Failed to fetch user IoT device", err);
+      set({ userDevice: null });
+    }
+  },
+
 }));

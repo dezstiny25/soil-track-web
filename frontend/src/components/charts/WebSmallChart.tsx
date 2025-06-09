@@ -1,9 +1,13 @@
 import React, { useMemo } from 'react';
 import ReactApexChart from 'react-apexcharts';
 import dayjs, { Dayjs } from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
 
+dayjs.extend(utc);
+dayjs.extend(timezone);
 dayjs.extend(isSameOrBefore);
 dayjs.extend(isSameOrAfter);
 
@@ -20,8 +24,17 @@ interface WebSmallChartProps {
   selectedRange: '1D' | '1W' | '1M' | '3M' | 'custom';
   currentStartDate: Dayjs;
   currentEndDate?: Dayjs;
-  isMini? : boolean;
+  isMini?: boolean;
 }
+
+const TARGET_TIMEZONE = 'Asia/Shanghai';
+
+const COLOR_MAP: Record<string, string> = {
+  moisture: '#1E88E5',
+  nitrogen: '#FFEB3B',
+  phosphorus: '#9C27B0',
+  potassium: '#E91E63',
+};
 
 const TIME_RANGES: Record<'1D' | '1W' | '1M' | '3M', number> = {
   '1D': 1,
@@ -30,12 +43,6 @@ const TIME_RANGES: Record<'1D' | '1W' | '1M' | '3M', number> = {
   '3M': 90,
 };
 
-const COLOR_MAP: Record<string, string> = {
-  moisture: '#1E88E5',
-  nitrogen: '#FFEB3B',
-  phosphorus: '#9C27B0',
-  potassium: '#E91E63',
-};
 
 const WebSmallChart: React.FC<WebSmallChartProps> = ({
   readings,
@@ -47,26 +54,38 @@ const WebSmallChart: React.FC<WebSmallChartProps> = ({
   currentEndDate,
   isMini = false,
 }) => {
-  const [windowStart, windowEnd] = useMemo(() => {
-    if (selectedRange === 'custom' && currentEndDate) {
-      return [currentStartDate.startOf('day'), currentEndDate.endOf('day')];
-    }
-    const days = TIME_RANGES[selectedRange as keyof typeof TIME_RANGES];
-    return [
-      currentStartDate.startOf('day'),
-      currentStartDate.add(days - 1, 'day').endOf('day'),
-    ];
-  }, [selectedRange, currentStartDate, currentEndDate]);
-
   const filteredReadings = useMemo(() => {
-    return readings.filter((r) => {
-      const time = dayjs(r.read_time);
-      return time.isSameOrAfter(windowStart) && time.isSameOrBefore(windowEnd);
-    });
-  }, [readings, windowStart, windowEnd]);
+  const now = dayjs().tz(TARGET_TIMEZONE);
+  let startDate = currentStartDate;
 
-  const categories = filteredReadings.map((r) => r.read_time);
-  const dataValues = filteredReadings.map((r) => r[dataKey]);
+  if (selectedRange !== 'custom') {
+    const daysBack = TIME_RANGES[selectedRange];
+    startDate = now.subtract(daysBack, 'day');
+  }
+
+  return readings
+    .filter(r => {
+      const readTime = dayjs(r.read_time).tz(TARGET_TIMEZONE);
+      return (
+        r[dataKey] !== null &&
+        r[dataKey] !== undefined &&
+        readTime.isSameOrAfter(startDate) &&
+        readTime.isSameOrBefore(now)
+      );
+    })
+    .sort(
+      (a, b) =>
+        dayjs(a.read_time).tz(TARGET_TIMEZONE).valueOf() -
+        dayjs(b.read_time).tz(TARGET_TIMEZONE).valueOf()
+    );
+}, [readings, dataKey, selectedRange, currentStartDate]);
+
+
+  const categories = filteredReadings.map(r =>
+    dayjs.utc(r.read_time).tz(TARGET_TIMEZONE).format()
+  );
+
+  const dataValues = filteredReadings.map(r => r[dataKey]);
 
   const color = (() => {
     const key = dataKey.toLowerCase();
@@ -82,7 +101,7 @@ const WebSmallChart: React.FC<WebSmallChartProps> = ({
       type: 'area',
       toolbar: { show: false },
       zoom: { enabled: false },
-      sparkline: { enabled: isMini }, // enables tiny chart mode
+      sparkline: { enabled: isMini },
     },
     colors: [color],
     dataLabels: { enabled: false },
@@ -108,7 +127,10 @@ const WebSmallChart: React.FC<WebSmallChartProps> = ({
     },
     tooltip: {
       enabled: true,
-      x: { format: 'dd MMM yyyy h:mm A' },
+      x: {
+        formatter: (val: string | number) =>
+          dayjs(val).tz(TARGET_TIMEZONE).format('DD MMM YYYY h:mm A'),
+      },
       y: {
         formatter: (val: number) => `${val} mg/L`,
       },
@@ -119,7 +141,7 @@ const WebSmallChart: React.FC<WebSmallChartProps> = ({
 
   const series = [
     {
-      name: '',
+      name: title,
       data: dataValues,
     },
   ];

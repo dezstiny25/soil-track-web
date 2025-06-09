@@ -1,10 +1,14 @@
 import React, { useMemo } from 'react';
 import ReactApexChart from 'react-apexcharts';
 import dayjs, { Dayjs } from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
 import PercentageChange from './PercentageChange';
 
+dayjs.extend(utc);
+dayjs.extend(timezone);
 dayjs.extend(isSameOrBefore);
 dayjs.extend(isSameOrAfter);
 
@@ -46,34 +50,42 @@ const WebDetailedChart: React.FC<WebDetailedChartProps> = ({
   currentStartDate,
   currentEndDate,
 }) => {
-  const [windowStart, windowEnd] = useMemo(() => {
-    if (selectedRange === 'custom' && currentEndDate) {
-      return [currentStartDate.startOf('day'), currentEndDate.endOf('day')];
-    }
-    const days = TIME_RANGES[selectedRange as keyof typeof TIME_RANGES];
-    return [
-      currentStartDate.startOf('day'),
-      currentStartDate.add(days - 1, 'day').endOf('day'),
-    ];
-  }, [selectedRange, currentStartDate, currentEndDate]);
+  // We no longer need windowStart/windowEnd for '1D' as per new logic
+  // But you can keep or modify this part for other ranges if needed
 
-  const filteredReadings = useMemo(() => {
-    return readings.filter((r) => {
-      const time = dayjs(r.read_time);
-      return time.isSameOrAfter(windowStart) && time.isSameOrBefore(windowEnd);
-    });
-  }, [readings, windowStart, windowEnd]);
+ const filteredReadings = useMemo(() => {
+  const now = dayjs().tz('Asia/Shanghai');
+  let startDate = currentStartDate;
 
-  const categories = filteredReadings.map((r) => r.read_time);
-  const dataValues = filteredReadings.map((r) => r[dataKey]);
+  if (selectedRange !== 'custom') {
+    const daysBack = TIME_RANGES[selectedRange];
+    startDate = now.subtract(daysBack, 'day');
+  }
+
+  return readings
+    .filter(r => {
+      const readTime = dayjs(r.read_time).tz('Asia/Shanghai');
+      return (
+        r[dataKey] !== null &&
+        r[dataKey] !== undefined &&
+        readTime.isSameOrAfter(startDate) &&
+        readTime.isSameOrBefore(now)
+      );
+    })
+    .sort((a, b) =>
+      dayjs(a.read_time).tz('Asia/Shanghai').valueOf() -
+      dayjs(b.read_time).tz('Asia/Shanghai').valueOf()
+    );
+}, [readings, dataKey, selectedRange, currentStartDate]);
+
+
+  const categories = filteredReadings.map(r => r.read_time);
+  const dataValues = filteredReadings.map(r => r[dataKey]);
 
   // Compute latest and previous for % change
-  const sorted = [...filteredReadings]
-    .filter((r) => r[dataKey] !== null && r[dataKey] !== undefined)
-    .sort((a, b) => new Date(b.read_time).getTime() - new Date(a.read_time).getTime());
+const latest = filteredReadings.at(-1)?.[dataKey] ?? null;
+const previous = filteredReadings.at(0)?.[dataKey] ?? null;
 
-  const latest = sorted[0]?.[dataKey] ?? null;
-  const previous = sorted[1]?.[dataKey] ?? null;
 
   const color = (() => {
     const key = dataKey.toLowerCase();
@@ -110,16 +122,25 @@ const WebDetailedChart: React.FC<WebDetailedChartProps> = ({
       },
     },
     yaxis: {
+      min: 0,
+      max: 200,
+      tickAmount: 4,
       labels: {
         style: { colors: '#666', fontSize: '12px' },
       },
     },
     tooltip: {
-      x: { format: 'dd MMM yyyy h:mm A' },
+      x: {
+        formatter: (val: string | number) => {
+          // val is usually the timestamp in milliseconds or ISO string
+          return dayjs(val).tz('Asia/Shanghai').format('DD MMM YYYY h:mm A');
+        },
+      },
       y: {
         formatter: (val: number) => `${val}${unit}`,
       },
     },
+
     legend: {
       show: false,
     },

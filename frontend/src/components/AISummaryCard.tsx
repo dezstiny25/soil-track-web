@@ -1,4 +1,5 @@
-import React, { useEffect } from "react";
+//AISummaryCard.tsx
+import React, { useEffect, useMemo } from "react";
 import { usePlotStore } from "../store/usePlotStore";
 import { useAuthStore } from "../store/useAuthStore";
 import dashboardStyles from "../styles/dashboard.module.css";
@@ -20,56 +21,67 @@ const AISummaryCard: React.FC<AISummaryCardProps> = ({ onAnalysisCheck }) => {
     }
   }, [selectedPlotId, getAiHistory]);
 
-  if (!selectedPlotId || !aiHistory) {
-    onAnalysisCheck?.(false);
-    return <p></p>;
-  }
+  const englishEntries = useMemo(() => {
+    
+    if (!Array.isArray(aiHistory)) return [];
+    return aiHistory.filter((entry) => {
+      const analysis = entry?.analysis;
+      const aiAnalysis = analysis?.AI_Analysis;
+      return (
+        entry?.language_type?.toLowerCase() === "en" &&
+        typeof analysis?.headline === "string" &&
+        typeof analysis?.short_summary === "string" &&
+        typeof aiAnalysis?.date === "string"
+      );
+    });
+    console.log("AI History raw:", aiHistory);
+  }, [aiHistory]);
 
-  const englishEntries = aiHistory.filter(
-    (entry) =>
-      entry.language_type?.toLowerCase() === "en" &&
-      entry.analysis?.headline &&
-      entry.analysis?.short_summary &&
-      entry.analysis?.AI_Analysis?.date
-  );
+  const latestEntry = useMemo(() => {
+    
+    if (englishEntries.length === 0) return null;
+    return englishEntries.reduce((latest, current) => {
+      const latestDate = new Date(latest.analysis?.AI_Analysis?.date || 0);
+      const currentDate = new Date(current.analysis?.AI_Analysis?.date || 0);
+      return currentDate > latestDate ? current : latest;
+    });
+    console.log("Filtered English entries:", englishEntries);
+  }, [englishEntries]);
 
-  if (englishEntries.length === 0) {
-    onAnalysisCheck?.(false);
-    return <p>No Analysis Generated for today.</p>;
-  }
-
-  const latestEntry = englishEntries.reduce((latest, current) => {
-    return new Date(current.analysis.AI_Analysis.date) >
-      new Date(latest.analysis.AI_Analysis.date)
-      ? current
-      : latest;
-  });
-
-  const isToday = (() => {
-    if (!latestEntry?.analysis?.AI_Analysis?.date) return false;
+  const isToday = useMemo(() => {
+    const analysisDate = latestEntry?.analysis?.AI_Analysis?.date;
+    if (!analysisDate) return false;
     const today = new Date();
-    const analysisDate = new Date(latestEntry.analysis.AI_Analysis.date);
+    const date = new Date(analysisDate);
     return (
-      today.getFullYear() === analysisDate.getFullYear() &&
-      today.getMonth() === analysisDate.getMonth() &&
-      today.getDate() === analysisDate.getDate()
+      today.getFullYear() === date.getFullYear() &&
+      today.getMonth() === date.getMonth() &&
+      today.getDate() === date.getDate()
     );
-  })();
+  }, [latestEntry]);
 
-  onAnalysisCheck?.(isToday);
+  useEffect(() => {
+      console.log("Latest Entry:", latestEntry);
+  console.log("Is today:", isToday);
+    onAnalysisCheck?.(!!latestEntry && isToday);
+  }, [onAnalysisCheck, latestEntry, isToday]);
 
-  if (!isToday) {
+  // Show message when no valid analysis is available
+  if (!latestEntry || !isToday) {
     return (
       <div className="rounded-xl bg-white p-12 py-16 space-y-4">
         <span className={dashboardStyles.subHeading}>
           Hey, <span className="font-bold">{authUser?.userFname || "Guest Account"}! 👋</span>
         </span>
         <h2 className={styles.superTitle}>No Analysis Generated.</h2>
-        <p className="text-gray-800 w-3/4 text-lg">Currently, there is no analysis generated today.</p>
+        <p className="text-gray-800 w-3/4 text-lg">
+          Currently, there is no analysis generated today.
+        </p>
       </div>
     );
   }
 
+  // Show latest analysis
   const { headline, short_summary } = latestEntry.analysis;
 
   return (

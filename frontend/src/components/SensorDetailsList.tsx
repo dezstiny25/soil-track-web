@@ -1,6 +1,6 @@
 import dashboardStyles from '../styles/dashboard.module.css';
 import React, { useEffect, useMemo } from 'react';
-import nanoImage from '../assets/hardware/nano_not_connected.png';
+import nanoImage from '../assets/hardware/nano_not_connected_with_shadow.png';
 import npkImage from '../assets/hardware/npk_model.png';
 import moistureImage from '../assets/hardware/moisture_model.png';
 import { usePlotStore } from '../store/usePlotStore';
@@ -49,31 +49,14 @@ const SensorDetailsList: React.FC = () => {
                 className="object-contain mb-4"
               />
             </div>
-            <div className="flex flex-row items-center justify-center w-full p-4">
-              <div className="flex flex-col w-2/4 items-start text-start">
+            <div className="flex flex-row items-start justify-start w-full p-4">
+              <div className="flex flex-col w-4/4 items-start text-start">
                 <span className={`${dashboardStyles.sensorTitle} text-[#134F14] font-semibold`}>
                   {sensor.sensor_name}
                 </span>
                 <span className={`${dashboardStyles.sensorSubtitle} text-[#838383]`}>
                   {sensor.sensor_category}
                 </span>
-              </div>
-              <div className="flex flex-row w-2/4 items-center justify-end text-end">
-                <div
-                  className={`rounded-full px-5 py-[10px] flex items-center justify-between me-2 ${
-                    status === 'connected' ? 'bg-green-600' : 'bg-[#C42727]'
-                  }`}
-                >
-                  <div
-                    className={
-                      status === 'disconnected'
-                        ? dashboardStyles.sensorStatusOffline
-                        : dashboardStyles.sensorStatusOnline
-                    }
-                  >
-                    {status === 'disconnected' ? 'Disconnected' : 'Connected'}
-                  </div>
-                </div>
               </div>
             </div>
           </div>

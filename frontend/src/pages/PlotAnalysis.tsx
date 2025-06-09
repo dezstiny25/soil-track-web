@@ -1,3 +1,4 @@
+//PlotAnalysis.tsx
 import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import dayjs from 'dayjs';

@@ -1,3 +1,4 @@
+//AIAnalysisHistory.tsx
 import React, { useEffect, useState } from "react";
 import { usePlotStore } from "../store/usePlotStore";
 import { ArrowRight, ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
@@ -25,8 +26,10 @@ const AIAnalysisHistory: React.FC = () => {
     setPage(1);
     setExpanded(false);
   }, [filterType]);
+console.log("Raw AI history:", aiHistory);
 
   const filteredFindings = aiHistory
+  
     ?.filter(
       (entry) =>
         entry.language_type?.toLowerCase() === "en" &&
@@ -79,7 +82,7 @@ const AIAnalysisHistory: React.FC = () => {
       {/* History Items */}
       <div className="space-y-2">
         {!aiHistory ? (
-          <div className="text-center text-gray-500">Loading...</div>
+          <div className="text-center text-gray-500">No findings found.</div>
         ) : displayedFindings?.length === 0 ? (
           <div className="text-center text-gray-500">
             No {filterType.toLowerCase()} findings found.
